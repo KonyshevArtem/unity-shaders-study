@@ -133,6 +133,7 @@ GameObject:
   - component: {fileID: 538314497}
   - component: {fileID: 538314500}
   - component: {fileID: 538314501}
+  - component: {fileID: 538314502}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -212,7 +213,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 538314496}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d347db90d62644b849366edda27d142f, type: 3}
   m_Name: 
@@ -225,14 +226,30 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 538314496}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f5865b8b2b1e0471fbf9667666b554d2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   boxBlurMaterial: {fileID: 2100000, guid: a66bdcb9b034249f2bea3fdb38286a1c, type: 2}
   iterations: 1
-  downScaleFactor: 1
+  downScaleFactor: 2
+--- !u!114 &538314502
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 538314496}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8caf2f77099ce498c90d74ebde1754f6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  material: {fileID: 2100000, guid: 41d5365626558476db36f524053307a0, type: 2}
+  redOffset: {x: 3, y: 0}
+  greenOffset: {x: -3, y: 0}
+  blueOffset: {x: 0, y: -2}
 --- !u!1 &652768464
 GameObject:
   m_ObjectHideFlags: 0
