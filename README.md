@@ -24,3 +24,9 @@ Use distortion map to offset uv of rendered image.
 Simple box blur - mean of current pixel and its neighbours.
 
 ![](Demo/blur.png)
+
+## Chromatic Aberration
+
+Sample value for each color channel separately adding offset
+
+![](Demo/chromatic_aberration.png)
