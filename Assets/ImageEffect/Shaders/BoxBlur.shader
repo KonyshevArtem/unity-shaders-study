@@ -1,4 +1,4 @@
-﻿Shader "ImageEffects/BoxBlur"
+﻿Shader "Hidden/ImageEffects/BoxBlur"
 {
     Properties
     {
@@ -11,7 +11,7 @@
 
         Pass
         {
-            CGPROGRAM
+            HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag
 
@@ -23,6 +23,9 @@
                 float4 vertex : SV_POSITION;
             };
 
+            sampler2D _MainTex;
+            float4 _MainTex_TexelSize;
+
             v2f vert (appdata_base v)
             {
                 v2f o;
@@ -31,25 +34,22 @@
                 return o;
             }
 
-            sampler2D _MainTex;
-            float4 _MainTex_TexelSize;
-
-            float4 boxBlur(float2 uv) 
+            half4 boxBlur(float2 uv) 
             {
                 float x = _MainTex_TexelSize.x;
                 float y = _MainTex_TexelSize.y;
-                float4 sum = tex2D(_MainTex, uv) + tex2D(_MainTex, float2(uv.x - x, uv.y - y)) + tex2D(_MainTex, float2(uv.x, uv.y - y))
+                half4 sum = tex2D(_MainTex, uv) + tex2D(_MainTex, float2(uv.x - x, uv.y - y)) + tex2D(_MainTex, float2(uv.x, uv.y - y))
                                 + tex2D(_MainTex, float2(uv.x + x, uv.y - y)) + tex2D(_MainTex, float2(uv.x - x, uv.y))
                                 + tex2D(_MainTex, float2(uv.x + x, uv.y)) + tex2D(_MainTex, float2(uv.x - x, uv.y + y))
                                 + tex2D(_MainTex, float2(uv.x, uv.y + y)) + tex2D(_MainTex, float2(uv.x + x, uv.y + y));
                 return sum / 9;
             }
 
-            fixed4 frag (v2f i) : SV_Target
+            half4 frag (v2f i) : SV_Target
             {
                 return boxBlur(i.uv);
             }
-            ENDCG
+            ENDHLSL
         }
     }
 }
