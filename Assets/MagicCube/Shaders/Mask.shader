@@ -1,17 +1,19 @@
 ﻿Shader "Custom/Mask"
 {
     Properties
-    {   
-        _Color ("Color", Color) = (0, 0, 0, 0.5)
+    {
         _MaskId ("Mask Id", Int) = 0
     }
     SubShader
     {
-        Tags { "RenderType"="Transparent" }
+        Tags 
+        { 
+            "RenderType"="Opaque" 
+            "Queue"="Geometry-1"
+        }
       
-        Blend SrcAlpha OneMinusSrcAlpha
         ZWrite Off
-        LOD 200
+        ColorMask 0
 
         Stencil
         {
@@ -21,33 +23,35 @@
 
         Pass
         {       
-            CGPROGRAM
+            HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag
             
-            #include "UnityCG.cginc"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             
-            float4 _Color;
-            
-            struct v2f
+            struct Attributes
             {
-                float4 pos: POSITION;
-                float2 uv : TEXCOORD;
+                float4 positionOS : POSITION;
+            };
+
+            struct Varyings
+            {
+                float4 positionCS : POSITION;
             };
             
-            v2f vert(appdata_base v)
+            Varyings vert(Attributes v)
             {
-                v2f o;
-                o.pos = UnityObjectToClipPos(v.vertex);
+                Varyings o;
+                o.positionCS = TransformObjectToHClip(v.positionOS.xyz);
                 return o;
             }
             
-            float4 frag(v2f i) : SV_Target
+            float4 frag(Varyings i) : SV_Target
             {
-                return _Color;
+                return 0;
             }
             
-            ENDCG
+            ENDHLSL
         }
     }
 }
