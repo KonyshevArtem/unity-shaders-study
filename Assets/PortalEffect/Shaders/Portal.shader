@@ -1,59 +1,71 @@
-﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
-
-Shader "PortalEffect/Portal"
+﻿Shader "PortalEffect/Portal"
 {
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
+        [HideInInspector] _PortalID ("Portal ID", Int) = 0
     }
     
     SubShader
     {
-        Tags { "RenderType" = "Opaque" }
-        
+        Tags 
+        { 
+            "RenderType" = "Transparent"
+            "Queue" = "Transparent+2"
+        }
+
         Stencil
         {
-            Ref 1
-            Comp always
-            Pass replace
+            Ref [_PortalID]
+            Comp Equal
+            Pass Zero
+            ReadMask [_PortalID]
+            WriteMask [_PortalID]
         }
-        
+
         ZWrite Off
-    
+
         Pass
         {
-            CGPROGRAM
+            HLSLPROGRAM
             
             #pragma vertex vert
             #pragma fragment frag
             
-            #include "UnityCG.cginc"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             
-            struct v2f
+            struct Attributes
             {
-                float4 pos: POSITION;
-                float3 uv: TEXCOORD0;
+                float4 positionOS : POSITION;
+            };
+
+            struct Varyings
+            {
+                float4 positionCS : POSITION;
+                float3 positionWS : TEXCOORD1;
             };
             
-            sampler2D _MainTex;
-            float4 _MainTex_ST;    
-            float _BorderWidth;
+            TEXTURE2D(_MainTex); SAMPLER(sampler_MainTex);
+            uniform float4 _MainTex_ST;
             
-            v2f vert(appdata_base v)
+            Varyings vert(Attributes v)
             {
-                v2f o;
-                o.pos = UnityObjectToClipPos(v.vertex);
-                o.uv = float3(((o.pos.xy + o.pos.w) * 0.5), o.pos.w); 
+                Varyings o;
+                VertexPositionInputs posInputs = GetVertexPositionInputs(v.positionOS.xyz);
+                o.positionCS = posInputs.positionCS;
+                o.positionWS = posInputs.positionWS;
                 return o;
             }
             
-            half4 frag(v2f i) : SV_Target
+            half4 frag(Varyings i) : SV_Target
             {
-                float2 uv = i.uv.xy / i.uv.z;
-                return tex2D(_MainTex, uv);
+                float2 uv = i.positionCS.xy;
+                uv *= (_ScreenParams.zw - 1);
+                uv = uv * 0.5 + 0.5;
+                return SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, TRANSFORM_TEX(uv, _MainTex));
             }
             
-            ENDCG
+            ENDHLSL
         }
     }
 }

@@ -1,14 +1,23 @@
 ﻿Shader "PortalEffect/PortalTraveler"
 {
+    Properties
+    {
+        [HideInInspector] _PortalID ("Portal ID", Int) = 0
+    }
     SubShader
     {
-        Tags { "RenderType"="Opaque" }
-        
-        Stencil
-        {
-            Ref 1
-            Comp equal
+        Tags 
+        { 
+            "RenderType"="Transparent"
+            "Queue"="Transparent+3"
         }
+        
+       Stencil
+       {
+           Ref [_PortalID]
+           Comp NotEqual
+           ReadMask [_PortalID]
+       }
 
         Pass
         {
