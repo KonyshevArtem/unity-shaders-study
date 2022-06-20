@@ -3,27 +3,28 @@
 [RequireComponent(typeof(Renderer))]
 public class Mask : MonoBehaviour
 {
-    [SerializeField] private int maskId;
-    [SerializeField] private Color color;
-    [SerializeField] private Material maskMaterial;
+    [SerializeField] int m_MaskID;
+    [SerializeField] Material m_MaskMaterial;
 
-    private Renderer renderer;
-    
-    private void Awake()
+    Renderer m_Renderer;
+
+    void Awake()
     {
-        renderer = GetComponent<Renderer>();
-        Material material = new Material(maskMaterial);
-        material.SetInt("_MaskId", maskId);
-        renderer.material = material;
+        Init();
     }
 
-    void Update()
+    void Init()
     {
-        if (renderer != null)
-        {
-            MaterialPropertyBlock properties = new MaterialPropertyBlock();
-            properties.SetColor("_Color", color);
-            renderer.SetPropertyBlock(properties);
-        }
+        m_Renderer = GetComponent<Renderer>();
+        Material material = new Material(m_MaskMaterial);
+        material.SetInt("_MaskId", m_MaskID);
+        m_Renderer.material = material;
     }
+
+#if UNITY_EDITOR
+    void OnValidate()
+    {
+        Init();
+    }
+#endif
 }
