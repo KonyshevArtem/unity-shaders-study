@@ -1,4 +1,4 @@
-﻿Shader "PortalEffect/Portal"
+Shader "PortalEffect/Portal"
 {
     Properties
     {
@@ -60,7 +60,7 @@
             half4 frag(Varyings i) : SV_Target
             {
                 float2 uv = i.positionCS.xy;
-                uv *= (_ScreenParams.zw - 1);
+                uv *= (_ScreenParams.zz - 1);
                 uv = uv * 0.5 + 0.5;
                 return SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, TRANSFORM_TEX(uv, _MainTex));
             }
