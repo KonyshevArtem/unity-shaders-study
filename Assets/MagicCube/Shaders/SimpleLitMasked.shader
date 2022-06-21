@@ -327,6 +327,12 @@ Shader "Custom/Simple Lit Masked"
 
     SubShader
     {
+        Stencil
+        {
+            Ref [_MaskId]
+            Comp Equal
+        }
+
         Tags { "RenderType" = "Opaque" "RenderPipeline" = "UniversalPipeline" "UniversalMaterialType" = "SimpleLit" "IgnoreProjector" = "True" "ShaderModel"="2.0"}
         LOD 300
 
