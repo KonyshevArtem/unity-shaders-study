@@ -40,7 +40,10 @@ Shader "Custom/Mirror"
 
             half4 frag (Varyings i) : SV_Target
             {
-                return SAMPLE_TEXTURE2D(_MirrorTex, sampler_MirrorTex, i.uv);
+                float2 uv = i.positionCS * (_ScreenParams.zw - 1.0);
+                uv.x = 1 - uv.x;
+                uv.y = lerp(uv.y, 1 - uv.y, saturate(_ProjectionParams.x));
+                return SAMPLE_TEXTURE2D(_MirrorTex, sampler_MirrorTex, uv);
             }
             ENDHLSL
         }

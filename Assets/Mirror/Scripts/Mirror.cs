@@ -1,4 +1,3 @@
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -38,26 +37,30 @@ public class Mirror : MonoBehaviour
 
     void BeginFrame(ScriptableRenderContext _Context, Camera _Camera)
     {
-#if UNITY_EDITOR
-        if (SceneView.currentDrawingSceneView != null && SceneView.currentDrawingSceneView.camera == _Camera)
-            return;
-#endif
+        Transform mirrorTransform = transform;
+        Vector3 mirrorPos = mirrorTransform.position;
+        Vector3 mirrorNormal = mirrorTransform.up;
 
-        Transform cameraTransform = _Camera.transform;
+        Transform sourceTransform = _Camera.transform;
+        Transform destTransform = m_Camera.transform;
 
-        Vector3 cameraWorldPos = cameraTransform.position;
-        Matrix4x4 mirrorMatrix = Matrix4x4.Scale(new Vector3(1, -1, 1)) * transform.worldToLocalMatrix * cameraTransform.localToWorldMatrix;
+        Vector3 cameraUp = Vector3.Reflect(sourceTransform.up, mirrorNormal);
+        Vector3 cameraFwd = Vector3.Reflect(sourceTransform.forward, mirrorNormal);
+        destTransform.rotation = Quaternion.LookRotation(cameraFwd, cameraUp);
 
-        //Matrix4x4 mirrorMatrix = Matrix4x4.Scale(new Vector3(1, -1, 1)) * transform.worldToLocalMatrix * cameraTransform.localToWorldMatrix;
-
-        //Vector3 cameraLocalPos = mirrorMatrix * new Vector4(cameraWorldPos.x, cameraWorldPos.y, cameraWorldPos.z, 1);
-        Vector3 cameraLocalPos = mirrorMatrix * new Vector4(0, 0, 0, 1);
-
-        m_Camera.transform.localPosition = cameraLocalPos;
-        m_Camera.transform.localRotation = mirrorMatrix.rotation;
+        Vector3 dir = sourceTransform.position - mirrorPos;
+        float projDistance = Vector3.Dot(dir, mirrorNormal);
+        destTransform.position = sourceTransform.position - 2 * mirrorNormal * projDistance;
 
         m_Renderer.SetPropertyBlock(m_Properties);
         m_Camera.targetTexture = m_Texture;
+        m_Camera.fieldOfView = _Camera.fieldOfView;
+        m_Camera.aspect = _Camera.aspect;
+
+        Matrix4x4 destViewMatrix = m_Camera.worldToCameraMatrix;
+        Vector3 mirrorPosCS = destViewMatrix.MultiplyPoint(mirrorPos);
+        Vector3 mirrorNormalCS = destViewMatrix.MultiplyVector(mirrorNormal);
+        m_Camera.projectionMatrix = m_Camera.CalculateObliqueMatrix(new Vector4(mirrorNormalCS.x, mirrorNormalCS.y, mirrorNormalCS.z, -Vector3.Dot(mirrorNormalCS, mirrorPosCS)));
 
         UniversalRenderPipeline.RenderSingleCamera(_Context, m_Camera);
     }
