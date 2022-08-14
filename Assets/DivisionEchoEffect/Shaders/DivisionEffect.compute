@@ -1,0 +1,70 @@
+#pragma kernel DivisionEffect
+
+RWByteAddressBuffer _VertexBuffer;
+uint3 _VertexAttributesData; // x - stride, y - normal offset, z - triangles count
+
+float3 _TargetPosition;
+float4 _EchoParams; // x - offset strength, y - offset distance, z - interference stength, w - triangle move strength
+float _Time;
+
+float4x4 _ModelMatrix;
+float4x4 _VPMatrix;
+float4x4 _MVPMatrixInv;
+
+Texture2D<float> _InterferenceNoise;
+SamplerState sampler_InterferenceNoise;
+
+Texture2D<float2> _TrianglesMoveNoise;
+SamplerState sampler_TrianglesMoveNoise;
+float4 _TrianglesMoveNoise_ST;
+
+float3 getOrigPosWS(uint vertIndex)
+{
+    // original posWS is always last 12 bytes
+    return mul(_ModelMatrix, float4(asfloat(_VertexBuffer.Load3((vertIndex + 1) * _VertexAttributesData.x - 12)), 1)).xyz;
+}
+
+float3 getNormalWS(uint vertIndex)
+{
+    return mul(_ModelMatrix, float4(asfloat(_VertexBuffer.Load3(vertIndex * _VertexAttributesData.x + _VertexAttributesData.y)), 0)).xyz;
+}
+
+[numthreads(64,1,1)]
+void DivisionEffect (uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _VertexAttributesData.z)
+        return;
+
+    uint vertexIndex = id.x * 3;
+
+    float3 offset = 0;
+    for (uint i = vertexIndex; i < vertexIndex + 3; i++)
+    {
+        float3 posWS = getOrigPosWS(i);
+        float3 dir = posWS - _TargetPosition;
+        dir.y = 0;
+        offset += getNormalWS(i) * max(_EchoParams.y - length(dir), 0) * _EchoParams.x;
+    }
+    offset /= 3;
+
+    for (uint j = vertexIndex; j < vertexIndex + 3; j++)
+    {
+        float3 posWS = getOrigPosWS(j) + offset;
+        float4 posCS = mul(_VPMatrix, float4(posWS, 1));
+
+        float2 uv = float2(posCS.x, posCS.y + _Time);
+
+        float interferenceOffset = _InterferenceNoise.SampleLevel(sampler_InterferenceNoise, uv, 0) * 2.0 - 1.0;
+        interferenceOffset *= _EchoParams.z;
+
+        uv = uv * _TrianglesMoveNoise_ST.xy + _TrianglesMoveNoise_ST.zw;
+        float2 trianglesMoveOffset = _TrianglesMoveNoise.SampleLevel(sampler_TrianglesMoveNoise, uv, 0) * 2.0 - 1.0;
+        trianglesMoveOffset *= _EchoParams.w * saturate(length(offset));
+
+        posCS.x += interferenceOffset;
+        posCS.xy += trianglesMoveOffset;
+
+        float3 posOS = mul(_MVPMatrixInv, posCS).xyz;
+        _VertexBuffer.Store3(j * _VertexAttributesData.x, asuint(posOS));
+    }
+}
