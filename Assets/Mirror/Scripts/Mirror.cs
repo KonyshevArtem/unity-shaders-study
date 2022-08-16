@@ -18,6 +18,13 @@ public class Mirror : MonoBehaviour
         m_Properties = new MaterialPropertyBlock();
     }
 
+    public void CopyCameraParameters(Camera _Camera)
+    {
+        m_Camera.fieldOfView = _Camera.fieldOfView;
+        m_Camera.aspect = _Camera.aspect;
+        m_Camera.projectionMatrix = _Camera.projectionMatrix;
+    }
+
     public void SetupCamera(Camera _Camera)
     {
         Transform mirrorTransform = transform;

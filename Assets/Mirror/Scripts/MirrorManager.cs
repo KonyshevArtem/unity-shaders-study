@@ -7,7 +7,17 @@ using UnityEngine.Rendering.Universal;
 [ExecuteInEditMode]
 class MirrorManager : MonoBehaviour
 {
-    const int MIRROR_MAX_DEPTH = 1;
+    struct MirrorInfo
+    {
+        public RenderTexture RenderTexture;
+        public Vector3 Position;
+        public Quaternion Rotation;
+        public float FOV;
+        public float Aspect;
+        public Matrix4x4 ProjectionMatrix;
+    }
+
+    [SerializeField, Range(0, 10)] int m_MaxDepth = 1;
 
     Mirror[] m_Mirrors;
     RenderTextureDescriptor m_Descriptor;
@@ -36,13 +46,16 @@ class MirrorManager : MonoBehaviour
     void BeginRenderCamera(ScriptableRenderContext _Context, Camera _Camera)
     {
         foreach (Mirror m in m_Mirrors)
+            m.CopyCameraParameters(_Camera);
+
+        foreach (Mirror m in m_Mirrors)
             RenderMirror(_Context, _Camera, m, 0);
     }
 
     void EndRenderCamera(ScriptableRenderContext _Context, Camera _Camera)
     {
         foreach (Mirror m in m_Mirrors)
-            ResetMirror(m, null);
+            ResetMirrorTexture(m, null);
     }
 
     void RenderMirror(ScriptableRenderContext _Context, Camera _Camera, Mirror _Mirror, int _Depth)
@@ -50,32 +63,55 @@ class MirrorManager : MonoBehaviour
         _Mirror.SetupCamera(_Camera);
         _Mirror.SetupTexture(RenderTexture.GetTemporary(m_Descriptor));
 
-        Dictionary<Mirror, RenderTexture> oldTextures = new Dictionary<Mirror, RenderTexture>();
+        Dictionary<Mirror, MirrorInfo> oldMirrorInfos = new Dictionary<Mirror, MirrorInfo>();
 
-        if (_Depth < MIRROR_MAX_DEPTH)
+        if (_Depth < m_MaxDepth)
         {
             foreach (Mirror m in m_Mirrors.Where(_M => _M != _Mirror))
-            {
-                oldTextures[m] = m.Texture;
+                oldMirrorInfos[m] = GetMirrorInfo(m);
 
+            foreach (Mirror m in m_Mirrors.Where(_M => _M != _Mirror))
                 RenderMirror(_Context, _Mirror.Camera, m, _Depth + 1);
-            }
         }
 
-        //_Mirror.Setup(_Camera, _Texture);
         UniversalRenderPipeline.RenderSingleCamera(_Context, _Mirror.Camera);
 
-        if (_Depth < MIRROR_MAX_DEPTH)
+        if (_Depth < m_MaxDepth)
         {
             foreach (Mirror m in m_Mirrors.Where(_M => _M != _Mirror))
-                ResetMirror(m, oldTextures[m]);
+                SetMirrorInfo(m, oldMirrorInfos[m]);
         }
     }
 
-    void ResetMirror(Mirror _Mirror, RenderTexture _OldTexture)
+    static void ResetMirrorTexture(Mirror _Mirror, RenderTexture _OldTexture)
     {
         RenderTexture t = _Mirror.Texture;
         _Mirror.SetupTexture(_OldTexture);
         RenderTexture.ReleaseTemporary(t);
+    }
+
+    static MirrorInfo GetMirrorInfo(Mirror _Mirror)
+    {
+        Transform camTransform = _Mirror.Camera.transform;
+        return new MirrorInfo
+        {
+            RenderTexture = _Mirror.Texture,
+            Position = camTransform.position,
+            Rotation = camTransform.rotation,
+            FOV = _Mirror.Camera.fieldOfView,
+            Aspect = _Mirror.Camera.aspect,
+            ProjectionMatrix = _Mirror.Camera.projectionMatrix
+        };
+    }
+
+    static void SetMirrorInfo(Mirror _Mirror, MirrorInfo _Info)
+    {
+        Transform camTransform = _Mirror.Camera.transform;
+        camTransform.position = _Info.Position;
+        camTransform.rotation = _Info.Rotation;
+        _Mirror.Camera.fieldOfView = _Info.FOV;
+        _Mirror.Camera.aspect = _Info.Aspect;
+        _Mirror.Camera.projectionMatrix = _Info.ProjectionMatrix;
+        ResetMirrorTexture(_Mirror, _Info.RenderTexture);
     }
 }
