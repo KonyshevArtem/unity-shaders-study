@@ -50,6 +50,9 @@ class MirrorManager : MonoBehaviour
 
         foreach (Mirror m in m_Mirrors)
             RenderMirror(_Context, _Camera, m, 0);
+
+        foreach (Mirror m in m_Mirrors)
+            m.SetDepth(0, m_MaxDepth);
     }
 
     void EndRenderCamera(ScriptableRenderContext _Context, Camera _Camera)
@@ -60,26 +63,36 @@ class MirrorManager : MonoBehaviour
 
     void RenderMirror(ScriptableRenderContext _Context, Camera _Camera, Mirror _Mirror, int _Depth)
     {
+        if (!_Mirror.gameObject.activeInHierarchy)
+            return;
+
         _Mirror.SetupCamera(_Camera);
         _Mirror.SetupTexture(RenderTexture.GetTemporary(m_Descriptor));
 
         Dictionary<Mirror, MirrorInfo> oldMirrorInfos = new Dictionary<Mirror, MirrorInfo>();
 
-        if (_Depth < m_MaxDepth)
-        {
-            foreach (Mirror m in m_Mirrors.Where(_M => _M != _Mirror))
-                oldMirrorInfos[m] = GetMirrorInfo(m);
+        Mirror[] otherMirrors = m_Mirrors.Where(_M => _M != _Mirror).ToArray();
 
-            foreach (Mirror m in m_Mirrors.Where(_M => _M != _Mirror))
+        foreach (Mirror m in otherMirrors)
+            oldMirrorInfos[m] = GetMirrorInfo(m);
+
+        foreach (Mirror m in otherMirrors)
+        {
+            if (_Depth < m_MaxDepth)
+            {
                 RenderMirror(_Context, _Mirror.Camera, m, _Depth + 1);
+                m.SetDepth(_Depth + 1, m_MaxDepth);
+            }
+            else
+                m.SetupBlackTexture();
         }
 
         UniversalRenderPipeline.RenderSingleCamera(_Context, _Mirror.Camera);
 
-        if (_Depth < m_MaxDepth)
+        foreach (Mirror m in otherMirrors)
         {
-            foreach (Mirror m in m_Mirrors.Where(_M => _M != _Mirror))
-                SetMirrorInfo(m, oldMirrorInfos[m]);
+            SetMirrorInfo(m, oldMirrorInfos[m]);
+            m.SetDepth(_Depth, m_MaxDepth);
         }
     }
 
@@ -87,7 +100,8 @@ class MirrorManager : MonoBehaviour
     {
         RenderTexture t = _Mirror.Texture;
         _Mirror.SetupTexture(_OldTexture);
-        RenderTexture.ReleaseTemporary(t);
+        if (t != null)
+            RenderTexture.ReleaseTemporary(t);
     }
 
     static MirrorInfo GetMirrorInfo(Mirror _Mirror)

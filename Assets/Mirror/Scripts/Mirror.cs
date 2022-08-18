@@ -3,6 +3,9 @@ using UnityEngine;
 [ExecuteInEditMode, RequireComponent(typeof(Renderer))]
 public class Mirror : MonoBehaviour
 {
+    static readonly int MIRROR_TEX_PROP_ID = Shader.PropertyToID("_MirrorTex");
+    static readonly int TINT_PROP_ID = Shader.PropertyToID("_Tint");
+
     [SerializeField] Camera m_Camera;
 
     Renderer m_Renderer;
@@ -57,10 +60,26 @@ public class Mirror : MonoBehaviour
 
         if (_Texture != null)
         {
-            m_Properties.SetTexture("_MirrorTex", _Texture);
+            m_Properties.SetTexture(MIRROR_TEX_PROP_ID, _Texture);
             m_Renderer.SetPropertyBlock(m_Properties);
         }
 
         m_Camera.targetTexture = _Texture;
+    }
+
+    public void SetDepth(int _Depth, int _MaxDepth)
+    {
+        float tint = (float)_Depth / (_MaxDepth + 1);
+        tint = 1 - tint * tint;
+
+        m_Properties.SetFloat(TINT_PROP_ID, tint);
+        m_Renderer.SetPropertyBlock(m_Properties);
+    }
+
+    public void SetupBlackTexture()
+    {
+        m_Texture = null;
+        m_Properties.SetTexture(MIRROR_TEX_PROP_ID, Texture2D.blackTexture);
+        m_Renderer.SetPropertyBlock(m_Properties);
     }
 }
