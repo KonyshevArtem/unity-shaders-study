@@ -18,6 +18,7 @@ class MirrorManager : MonoBehaviour
     }
 
     [SerializeField, Range(0, 10)] int m_MaxDepth = 1;
+    [SerializeField, Range(0.01f, 1)] float m_DownscaleFactor = 1;
 
     Mirror[] m_Mirrors;
     RenderTextureDescriptor m_Descriptor;
@@ -67,7 +68,15 @@ class MirrorManager : MonoBehaviour
             return;
 
         _Mirror.SetupCamera(_Camera);
-        _Mirror.SetupTexture(RenderTexture.GetTemporary(m_Descriptor));
+
+        var descriptor = m_Descriptor;
+        if (m_DownscaleFactor < 1 && _Depth > 0)
+        {
+            float factor = Mathf.Pow(m_DownscaleFactor, _Depth);
+            descriptor.width = Mathf.Max(1, (int) (descriptor.width * factor));
+            descriptor.height = Mathf.Max(1, (int) (descriptor.height * factor));
+        }
+        _Mirror.SetupTexture(RenderTexture.GetTemporary(descriptor));
 
         Dictionary<Mirror, MirrorInfo> oldMirrorInfos = new Dictionary<Mirror, MirrorInfo>();
 
