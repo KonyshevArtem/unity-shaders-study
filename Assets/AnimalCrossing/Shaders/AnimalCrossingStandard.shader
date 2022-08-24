@@ -1,4 +1,4 @@
-Shader "Custom/AnimalCrossing"
+Shader "Custom/Animal Crossing/Standard"
 {
     Properties
     {
@@ -16,9 +16,10 @@ Shader "Custom/AnimalCrossing"
             HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag
-            #pragma multi_compile _ ANIMAL_CROSSING_SLOPE
+            #pragma multi_compile_vertex _ ANIMAL_CROSSING_SLOPE
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Assets/AnimalCrossing/Shaders/AnimalCrossingSlope.hlsl"
 
             struct Attributes
             {
@@ -35,20 +36,12 @@ Shader "Custom/AnimalCrossing"
             TEXTURE2D(_MainTex); SAMPLER(sampler_MainTex);
             float4 _MainTex_ST;
 
-            uniform float _SlopeFactor;
-            uniform float _SlopeOffset;
-
             Varyings vert (Attributes v)
             {
+                v.positionOS.xyz = ApplySlope(v.positionOS.xyz);
+
                 Varyings o;
-                float3 posWS = mul(UNITY_MATRIX_M, float4(v.positionOS.xyz, 1));
-
-                #if ANIMAL_CROSSING_SLOPE
-                float dist = max(posWS.z - _WorldSpaceCameraPos.z - _SlopeOffset, 0);
-                posWS.y -= dist * dist * _SlopeFactor;
-                #endif
-
-                o.positionCS = mul(UNITY_MATRIX_VP, float4(posWS.xyz, 1));
+                o.positionCS = TransformObjectToHClip(v.positionOS.xyz);
                 o.uv = TRANSFORM_TEX(v.texcoord, _MainTex);
                 return o;
             }
