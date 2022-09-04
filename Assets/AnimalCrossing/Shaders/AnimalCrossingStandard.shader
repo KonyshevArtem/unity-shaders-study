@@ -8,8 +8,11 @@ Shader "Custom/Animal Crossing/Standard"
     }
     SubShader
     {
-        Tags { "RenderType"="Opaque" }
-        LOD 100
+        Tags
+        {
+            "LightMode"="UniversalForward"
+            "RenderType"="Opaque"
+        }
 
         Pass
         {
@@ -24,12 +27,14 @@ Shader "Custom/Animal Crossing/Standard"
             struct Attributes
             {
                 float4 positionOS : POSITION;
+                float3 normalOS : NORMAL;
                 float2 texcoord : TEXCOORD0;
             };
 
             struct Varyings
             {
                 float4 positionCS : SV_POSITION;
+                float3 normalWS : TEXCOORD1;
                 float2 uv : TEXCOORD0;
             };
 
@@ -42,13 +47,15 @@ Shader "Custom/Animal Crossing/Standard"
 
                 Varyings o;
                 o.positionCS = TransformObjectToHClip(v.positionOS.xyz);
+                o.normalWS = mul(UNITY_MATRIX_M, float4(v.normalOS, 0));
                 o.uv = TRANSFORM_TEX(v.texcoord, _MainTex);
                 return o;
             }
 
             half4 frag (Varyings i) : SV_Target
             {
-                return SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv);
+                half4 ambient = half4(unity_SHAr.w, unity_SHAg.w, unity_SHAb.w, 0);
+                return SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv) * dot(normalize(i.normalWS), _MainLightPosition.xyz) + ambient;
             }
             ENDHLSL
         }

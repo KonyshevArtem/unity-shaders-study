@@ -1,5 +1,18 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-7211533042841048327
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 282849d2dba5143c4a9c04ac42fc6b4f, type: 3}
+  m_Name: AnimalCrossingWaterRenderFeature
+  m_EditorClassIdentifier: 
+  m_Active: 1
 --- !u!114 &-4527183903245702946
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -35,7 +48,8 @@ MonoBehaviour:
       type: 3}
   m_RendererFeatures:
   - {fileID: -4527183903245702946}
-  m_RendererFeatureMap: de682cde39362cc1
+  - {fileID: -7211533042841048327}
+  m_RendererFeatureMap: de682cde39362cc1f9aa77e7e77ceb9b
   m_UseNativeRenderPass: 0
   postProcessData: {fileID: 0}
   xrSystemData: {fileID: 11400000, guid: 60e1133243b97e347b653163a8c01b64, type: 2}

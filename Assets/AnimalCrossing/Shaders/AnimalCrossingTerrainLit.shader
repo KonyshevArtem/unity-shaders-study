@@ -52,7 +52,7 @@ Shader "Custom/Animal Crossing/Terrain/Lit"
     SubShader
     {
         Tags { "Queue" = "Geometry-100" "RenderType" = "Opaque" "RenderPipeline" = "UniversalPipeline" "UniversalMaterialType" = "Lit" "IgnoreProjector" = "False" "TerrainCompatible" = "True"}
-
+        
         Pass
         {
             Name "ForwardLit"
@@ -278,6 +278,28 @@ Shader "Custom/Animal Crossing/Terrain/Lit"
             #include "Packages/com.unity.render-pipelines.universal/Shaders/Terrain/TerrainLitInput.hlsl"
             #include "Assets/AnimalCrossing/Shaders/AnimalCrossingTerrainLitPasses.hlsl"
 
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "WaterDepth"
+            Tags{"LightMode" = "WaterDepth"}
+
+            ZWrite On
+            ColorMask 0
+
+            HLSLPROGRAM
+            #pragma target 2.0
+
+            #pragma vertex DepthOnlyVertex
+            #pragma fragment DepthOnlyFragment
+
+            #pragma multi_compile_instancing
+            #pragma instancing_options assumeuniformscaling nomatrices nolightprobe nolightmap
+
+            #include "Packages/com.unity.render-pipelines.universal/Shaders/Terrain/TerrainLitInput.hlsl"
+            #include "Assets/AnimalCrossing/Shaders/AnimalCrossingTerrainLitPasses.hlsl"
             ENDHLSL
         }
 
