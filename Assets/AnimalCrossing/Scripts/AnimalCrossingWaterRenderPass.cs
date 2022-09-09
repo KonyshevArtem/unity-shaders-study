@@ -51,32 +51,41 @@ public class AnimalCrossingWaterRenderPass : ScriptableRenderPass
             context.ExecuteCommandBuffer(cmd);
             cmd.Clear();
 
-            Bounds bounds = m_Water.TerrainWorldBounds;
-            Vector3 center = bounds.center;
-            Vector3 extents = bounds.extents;
 
-            Matrix4x4 view = Matrix4x4.TRS(
-                new Vector3(center.x, bounds.max.y + 0.1f, center.z),
-                Quaternion.LookRotation(Vector3.down, Vector3.forward),
-                new Vector3(1, 1, -1)).inverse;
+            // draw depth for water
+            {
+                Bounds bounds = m_Water.TerrainWorldBounds;
+                Vector3 center = bounds.center;
+                Vector3 extents = bounds.extents;
 
-            Matrix4x4 proj = Matrix4x4.Ortho(-extents.x, extents.x, -extents.z, extents.z, 0.01f, extents.y * 2 + 0.1f);
+                Matrix4x4 view = Matrix4x4.TRS(
+                    new Vector3(center.x, bounds.max.y + 0.1f, center.z),
+                    Quaternion.LookRotation(Vector3.down, Vector3.forward),
+                    new Vector3(1, 1, -1)).inverse;
 
-            cmd.SetViewProjectionMatrices(view, proj);
-            context.ExecuteCommandBuffer(cmd);
-            cmd.Clear();
+                Matrix4x4 proj = Matrix4x4.Ortho(-extents.x, extents.x, -extents.z, extents.z, 0.01f, extents.y * 2 + 0.1f);
 
-            DrawingSettings drawingSettings = CreateDrawingSettings(m_WaterDepthTagId, ref renderingData, SortingCriteria.CommonOpaque);
-            context.DrawRenderers(renderingData.cullResults, ref drawingSettings, ref m_FilteringSettings);
-            context.Submit();
+                cmd.SetViewProjectionMatrices(view, proj);
+                context.ExecuteCommandBuffer(cmd);
+                cmd.Clear();
 
-            cmd.SetRenderTarget(renderingData.cameraData.renderer.cameraColorTarget, renderingData.cameraData.renderer.cameraDepthTarget);
-            cmd.SetGlobalMatrix(DEPTH_MAP_VP_PROP_ID, proj * view);
-            cmd.SetGlobalTexture(DEPTH_MAP_PROP_ID, m_DepthMapIdentifier);
-            cmd.SetViewProjectionMatrices(renderingData.cameraData.GetViewMatrix(), renderingData.cameraData.GetProjectionMatrix());
-            cmd.DrawRenderer(m_Water.Renderer, m_Water.Renderer.sharedMaterial);
-            context.ExecuteCommandBuffer(cmd);
-            context.Submit();
+                DrawingSettings drawingSettings = CreateDrawingSettings(m_WaterDepthTagId, ref renderingData, SortingCriteria.CommonOpaque);
+                context.DrawRenderers(renderingData.cullResults, ref drawingSettings, ref m_FilteringSettings);
+                context.Submit();
+
+                cmd.SetGlobalMatrix(DEPTH_MAP_VP_PROP_ID, proj * view);
+            }
+
+
+            // draw water
+            {
+                cmd.SetRenderTarget(renderingData.cameraData.renderer.cameraColorTarget);
+                cmd.SetGlobalTexture(DEPTH_MAP_PROP_ID, m_DepthMapIdentifier);
+                cmd.SetViewProjectionMatrices(renderingData.cameraData.GetViewMatrix(), renderingData.cameraData.GetProjectionMatrix());
+                cmd.DrawRenderer(m_Water.Renderer, m_Water.Renderer.sharedMaterial);
+                context.ExecuteCommandBuffer(cmd);
+                context.Submit();
+            }
 
             cmd.Clear();
             CommandBufferPool.Release(cmd);

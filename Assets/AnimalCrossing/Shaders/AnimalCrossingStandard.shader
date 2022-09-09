@@ -22,7 +22,7 @@ Shader "Custom/Animal Crossing/Standard"
             #pragma multi_compile_vertex _ ANIMAL_CROSSING_SLOPE
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            #include "Assets/AnimalCrossing/Shaders/AnimalCrossingSlope.hlsl"
+            #include "Assets/AnimalCrossing/Shaders/AnimalCrossingCommon.hlsl"
 
             struct Attributes
             {

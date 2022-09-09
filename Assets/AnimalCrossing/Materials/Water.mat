@@ -127,6 +127,7 @@ Material:
     - _SmallWavesStrength: 0.5
     - _Smoothness: 0.5
     - _SmoothnessTextureChannel: 0
+    - _SpecularHardness: 30
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _Surface: 0

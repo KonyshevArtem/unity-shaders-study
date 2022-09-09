@@ -5,7 +5,7 @@
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/UnityGBuffer.hlsl"
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DBuffer.hlsl"
-#include "Assets/AnimalCrossing/Shaders/AnimalCrossingSlope.hlsl"
+#include "Assets/AnimalCrossing/Shaders/AnimalCrossingCommon.hlsl"
 
 struct Attributes
 {
