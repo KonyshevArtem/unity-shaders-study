@@ -17,6 +17,8 @@ Shader "Custom/Animal Crossing/Water"
         _SlopeOffset ("Slope Offset", Float) = 0
 
         _SpecularHardness("Specular Hardness", Float) = 30
+
+        _Foam("Foam", 2D) = "white"
     }
     SubShader
     {
@@ -50,7 +52,8 @@ Shader "Custom/Animal Crossing/Water"
             {
                 float4 positionCS : SV_POSITION;
                 float4 flatPositionWS : TEXCOORD2;
-                float4 uv : TEXCOORD0;
+                float4 wavesUV: TEXCOORD1;
+                float2 uv : TEXCOORD0;
             };
 
             uniform float _UVOffset;
@@ -70,6 +73,9 @@ Shader "Custom/Animal Crossing/Water"
 
             TEXTURE2D(_DepthMap); SAMPLER(sampler_DepthMap);
             uniform float4x4 _DepthMapVP;
+
+            TEXTURE2D(_Foam); SAMPLER(sampler_Foam);
+            uniform float4 _Foam_ST;
 
             float sampleHeight(float4 uv)
             {
@@ -107,9 +113,9 @@ Shader "Custom/Animal Crossing/Water"
 
                 float2 bigWavesUV = TRANSFORM_TEX(v.texcoord, _BigWavesNoise) + _Time.xx;
                 float2 smallWavesUV = TRANSFORM_TEX(v.texcoord, _SmallWavesNoise) + _Time.xx * _SmallWavesSpeed;
-                float4 uv = float4(bigWavesUV, smallWavesUV);
+                float4 wavesUV = float4(bigWavesUV, smallWavesUV);
 
-                float height = sampleHeight(uv);
+                float height = sampleHeight(wavesUV);
                 height *= max(0.1, getDepthTerm(flatPosWS.xyz));
 
                 flatPosWS.y += height;
@@ -117,15 +123,16 @@ Shader "Custom/Animal Crossing/Water"
 
                 o.positionCS = mul(UNITY_MATRIX_VP, slopedPosWS);
                 o.flatPositionWS = flatPosWS;
-                o.uv = uv;
+                o.wavesUV = wavesUV;
+                o.uv = v.texcoord;
                 return o;
             }
 
             half4 frag (Varyings i) : SV_Target
             {
                 float depthTerm = getDepthTerm(i.flatPositionWS.xyz);
-                float3 normalOS = normalFromHeight(i.uv, depthTerm);
-                float3 normalWS = mul(UNITY_MATRIX_M, float4(normalOS, 0)).xyz;
+                float3 normalOS = normalFromHeight(i.wavesUV, depthTerm);
+                float3 normalWS = normalize(mul(UNITY_MATRIX_M, float4(normalOS, 0)).xyz);
 
                 float3 viewDirWS = GetWorldSpaceNormalizeViewDir(i.flatPositionWS.xyz);
                 float3 H = normalize(viewDirWS + _MainLightPosition.xyz);
@@ -136,7 +143,18 @@ Shader "Custom/Animal Crossing/Water"
                 half4 color = lerp(_ShallowWaterColor, _DeepWaterColor, depthTerm);
                 half4 ambient = half4(unity_SHAr.w, unity_SHAg.w, unity_SHAb.w, 0);
 
-                float NdotL = saturate(dot(normalize(normalWS), _MainLightPosition.xyz));
+                float wavesFoamHeight = SAMPLE_TEXTURE2D_LOD(_SmallWavesNoise, sampler_SmallWavesNoise, i.wavesUV.zw, 0).r;
+                wavesFoamHeight *= SAMPLE_TEXTURE2D_LOD(_BigWavesNoise, sampler_BigWavesNoise, i.wavesUV.xy, 0).r;
+                wavesFoamHeight *= depthTerm;
+                half4 wavesFoamColor = SAMPLE_TEXTURE2D(_Foam, sampler_Foam, TRANSFORM_TEX(i.wavesUV.zw, _Foam));
+                color = lerp(color, wavesFoamColor, smoothstep(0.2, 0.5, wavesFoamHeight));
+
+                half4 shoreFoamColor = SAMPLE_TEXTURE2D(_Foam, sampler_Foam, TRANSFORM_TEX(i.uv, _Foam));
+                float shoreFoamOffset = (_SinTime.w * 0.5 + 0.5) * 0.2;
+                color = lerp(color, shoreFoamColor, 1 - smoothstep(0.1, 0.3 + shoreFoamOffset, depthTerm));
+                color = lerp(color, half4(.8, .8, .8, 1), 1 - smoothstep(0, 0.2, depthTerm));
+
+                float NdotL = saturate(dot(normalWS, _MainLightPosition.xyz));
                 return half4(color.rgb * NdotL, color.a) + ambient + specular * NdotL;
             }
             ENDHLSL
