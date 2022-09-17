@@ -5,13 +5,18 @@ using UnityEngine.Rendering.Universal;
 public class AnimalCrossingWaterRenderPass : ScriptableRenderPass
 {
     const string PROFILER_TAG = "Water";
-    static readonly int DEPTH_MAP_PROP_ID = Shader.PropertyToID("_DepthMap");
+    const string DEPTH_MAP = "_DepthMap";
+    const string CAMERA_COLOR_COPY = "_CameraColorCopy";
+    static readonly int DEPTH_MAP_PROP_ID = Shader.PropertyToID(DEPTH_MAP);
     static readonly int DEPTH_MAP_VP_PROP_ID = Shader.PropertyToID("_DepthMapVP");
+    static readonly int CAMERA_COLOR_COPY_PROP_ID = Shader.PropertyToID(CAMERA_COLOR_COPY);
 
     readonly ProfilingSampler m_Sampler;
     readonly ShaderTagId m_WaterDepthTagId;
     readonly RenderTargetHandle m_DepthMapHandle;
+    readonly RenderTargetHandle m_CameraColorCopyHandle;
     readonly RenderTargetIdentifier m_DepthMapIdentifier;
+    readonly RenderTargetIdentifier m_CameraColorCopyIdentifier;
     FilteringSettings m_FilteringSettings;
 
     AnimalCrossingWater m_Water;
@@ -23,11 +28,14 @@ public class AnimalCrossingWaterRenderPass : ScriptableRenderPass
         m_FilteringSettings = new FilteringSettings(RenderQueueRange.all);
         renderPassEvent = RenderPassEvent.AfterRenderingOpaques;
 
-        m_DepthMapHandle.Init("_DepthMap");
+        m_DepthMapHandle.Init(DEPTH_MAP);
+        m_CameraColorCopyHandle.Init(CAMERA_COLOR_COPY);
         m_DepthMapIdentifier = new RenderTargetIdentifier(m_DepthMapHandle.id);
+        m_CameraColorCopyIdentifier = new RenderTargetIdentifier(m_CameraColorCopyHandle.id);
 
         ConfigureClear(ClearFlag.All, Color.clear);
         ConfigureTarget(m_DepthMapIdentifier);
+        ConfigureInput(ScriptableRenderPassInput.Color);
     }
 
     public void Setup(AnimalCrossingWater _Water)
@@ -76,11 +84,17 @@ public class AnimalCrossingWaterRenderPass : ScriptableRenderPass
                 cmd.SetGlobalMatrix(DEPTH_MAP_VP_PROP_ID, proj * view);
             }
 
+            // copy camera color texture
+            {
+                cmd.GetTemporaryRT(m_CameraColorCopyHandle.id, renderingData.cameraData.cameraTargetDescriptor);
+                cmd.Blit(renderingData.cameraData.renderer.cameraColorTarget, m_CameraColorCopyIdentifier);
+            }
 
             // draw water
             {
                 cmd.SetRenderTarget(renderingData.cameraData.renderer.cameraColorTarget);
                 cmd.SetGlobalTexture(DEPTH_MAP_PROP_ID, m_DepthMapIdentifier);
+                cmd.SetGlobalTexture(CAMERA_COLOR_COPY_PROP_ID, m_CameraColorCopyIdentifier);
                 cmd.SetViewProjectionMatrices(renderingData.cameraData.GetViewMatrix(), renderingData.cameraData.GetProjectionMatrix());
                 cmd.DrawRenderer(m_Water.Renderer, m_Water.Renderer.sharedMaterial);
                 context.ExecuteCommandBuffer(cmd);
@@ -97,5 +111,6 @@ public class AnimalCrossingWaterRenderPass : ScriptableRenderPass
         base.OnCameraCleanup(cmd);
 
         cmd.ReleaseTemporaryRT(m_DepthMapHandle.id);
+        cmd.ReleaseTemporaryRT(m_CameraColorCopyHandle.id);
     }
 }

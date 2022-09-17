@@ -19,6 +19,8 @@ Shader "Custom/Animal Crossing/Water"
         _SpecularHardness("Specular Hardness", Float) = 30
 
         _Foam("Foam", 2D) = "white"
+
+        _UnderwaterDistortionStrength("Underwater Distortion Strength", Float) = 1
     }
     SubShader
     {
@@ -28,8 +30,6 @@ Shader "Custom/Animal Crossing/Water"
             "RenderType"="Transparent"
             "Queue"="Transparent"
         }
-        Blend SrcAlpha OneMinusSrcAlpha
-        ZWrite Off
         Cull Back
 
         Pass
@@ -76,6 +76,10 @@ Shader "Custom/Animal Crossing/Water"
 
             TEXTURE2D(_Foam); SAMPLER(sampler_Foam);
             uniform float4 _Foam_ST;
+
+            TEXTURE2D(_CameraColorCopy); SAMPLER(sampler_CameraColorCopy);
+
+            uniform float _UnderwaterDistortionStrength;
 
             float sampleHeight(float4 uv)
             {
@@ -130,32 +134,46 @@ Shader "Custom/Animal Crossing/Water"
 
             half4 frag (Varyings i) : SV_Target
             {
+                // calc normal from height map
                 float depthTerm = getDepthTerm(i.flatPositionWS.xyz);
                 float3 normalOS = normalFromHeight(i.wavesUV, depthTerm);
                 float3 normalWS = normalize(mul(UNITY_MATRIX_M, float4(normalOS, 0)).xyz);
+                float3 normalCS = normalize(mul(UNITY_MATRIX_VP, float4(normalWS, 0)).xyz);
 
+                // specular
                 float3 viewDirWS = GetWorldSpaceNormalizeViewDir(i.flatPositionWS.xyz);
                 float3 H = normalize(viewDirWS + _MainLightPosition.xyz);
 		        float NdotH = saturate(dot(normalWS, H));
 		        float specularIntensity = pow(NdotH, _SpecularHardness);
                 half4 specular = half4(specularIntensity, specularIntensity, specularIntensity, 0);
 
+                // water color
                 half4 color = lerp(_ShallowWaterColor, _DeepWaterColor, depthTerm);
                 half4 ambient = half4(unity_SHAr.w, unity_SHAg.w, unity_SHAb.w, 0);
 
+                // waves foam
                 float wavesFoamHeight = SAMPLE_TEXTURE2D_LOD(_SmallWavesNoise, sampler_SmallWavesNoise, i.wavesUV.zw, 0).r;
                 wavesFoamHeight *= SAMPLE_TEXTURE2D_LOD(_BigWavesNoise, sampler_BigWavesNoise, i.wavesUV.xy, 0).r;
                 wavesFoamHeight *= depthTerm;
                 half4 wavesFoamColor = SAMPLE_TEXTURE2D(_Foam, sampler_Foam, TRANSFORM_TEX(i.wavesUV.zw, _Foam));
                 color = lerp(color, wavesFoamColor, smoothstep(0.2, 0.5, wavesFoamHeight));
 
+                // shore foam
                 half4 shoreFoamColor = SAMPLE_TEXTURE2D(_Foam, sampler_Foam, TRANSFORM_TEX(i.uv, _Foam));
                 float shoreFoamOffset = (_SinTime.w * 0.5 + 0.5) * 0.2;
                 color = lerp(color, shoreFoamColor, 1 - smoothstep(0.1, 0.3 + shoreFoamOffset, depthTerm));
                 color = lerp(color, half4(.8, .8, .8, 1), 1 - smoothstep(0, 0.2, depthTerm));
 
+                // underwater
+                float height = sampleHeight(i.wavesUV) * depthTerm;
+                float2 screenUV = i.positionCS.xy * (_ScreenParams.zw - 1.0);
+                screenUV += normalCS.xy * height * _UnderwaterDistortionStrength;
+                half3 underwaterColor = SAMPLE_TEXTURE2D(_CameraColorCopy, sampler_CameraColorCopy, screenUV).rgb;
+                color.rgb = lerp(underwaterColor, color.rgb, color.a);
+
+                // final color
                 float NdotL = saturate(dot(normalWS, _MainLightPosition.xyz));
-                return half4(color.rgb * NdotL, color.a) + ambient + specular * NdotL;
+                return half4(color.rgb * NdotL, 1) + ambient + specular * NdotL;
             }
             ENDHLSL
         }

@@ -7,7 +7,7 @@ public class AnimalCrossingWaterRenderFeature : ScriptableRendererFeature
 
     public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
     {
-        if (m_Pass == null || m_Water == null || m_Water.Renderer == null)
+        if (m_Pass == null || m_Water == null || m_Water.Renderer == null || renderingData.cameraData.isPreviewCamera)
             return;
 
         m_Pass.Setup(m_Water);
