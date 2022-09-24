@@ -48,6 +48,10 @@ struct Varyings
     float2 dynamicLightmapUV        : TEXCOORD9;
 #endif
 
+#ifdef ANIMAL_CROSSING_WATER_CAUSTICS
+    float3 flatPositionWS           : TEXCOORD10;
+#endif
+
     float4 clipPos                  : SV_POSITION;
     UNITY_VERTEX_OUTPUT_STEREO
 };
@@ -241,6 +245,10 @@ Varyings SplatmapVert(Attributes v)
     UNITY_SETUP_INSTANCE_ID(v);
     UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
 
+#ifdef ANIMAL_CROSSING_WATER_CAUSTICS
+    o.flatPositionWS = mul(UNITY_MATRIX_M, float4(v.positionOS.xyz, 1)).xyz;
+#endif
+
     v.positionOS.xyz = ApplySlope(v.positionOS.xyz);
 
     TerrainInstancing(v.positionOS, v.normalOS, v.texcoord);
@@ -421,6 +429,11 @@ half4 SplatmapFragment(Varyings IN) : SV_TARGET
 #else
 
     half4 color = UniversalFragmentPBR(inputData, albedo, metallic, /* specular */ half3(0.0h, 0.0h, 0.0h), smoothness, occlusion, /* emission */ half3(0, 0, 0), alpha);
+
+#ifdef ANIMAL_CROSSING_WATER_CAUSTICS
+    half waterCaustic = SampleWaterCaustic(IN.flatPositionWS.xyz, inputData.normalWS.xyz);
+    color += half4(waterCaustic, waterCaustic, waterCaustic, 0);
+#endif
 
     SplatmapFinalColor(color, inputData.fogCoord);
 

@@ -22,6 +22,48 @@ Shader "Custom/Animal Crossing/Water"
 
         _UnderwaterDistortionStrength("Underwater Distortion Strength", Float) = 1
     }
+
+HLSLINCLUDE
+
+#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+#include "Assets/AnimalCrossing/Shaders/AnimalCrossingCommon.hlsl"
+
+struct Attributes
+{
+    float4 positionOS : POSITION;
+    float2 texcoord : TEXCOORD0;
+};
+
+uniform float _DeepWaterDepth;
+
+TEXTURE2D(_BigWavesNoise); SAMPLER(sampler_BigWavesNoise);
+uniform float4 _BigWavesNoise_ST;
+uniform float _BigWavesStrength;
+
+TEXTURE2D(_SmallWavesNoise); SAMPLER(sampler_SmallWavesNoise);
+uniform float4 _SmallWavesNoise_ST;
+uniform float _SmallWavesStrength;
+uniform float _SmallWavesSpeed;
+
+TEXTURE2D(_DepthMap); SAMPLER(sampler_DepthMap);
+
+float sampleHeight(float4 uv)
+{
+    float height = (SAMPLE_TEXTURE2D_LOD(_BigWavesNoise, sampler_BigWavesNoise, uv.xy, 0).r * 2.0 - 1.0) * _BigWavesStrength;
+    height += (SAMPLE_TEXTURE2D_LOD(_SmallWavesNoise, sampler_SmallWavesNoise, uv.zw, 0).r * 2.0 - 1.0) * _SmallWavesStrength;
+    return height;
+}
+
+float getDepthTerm(float3 posWS)
+{
+    float4 depthMapCoord = mul(_TopDownDepthVP, float4(posWS, 1)) * 0.5 + 0.5;
+    float terrainDepth = SAMPLE_TEXTURE2D_LOD(_DepthMap, sampler_DepthMap, depthMapCoord.xy, 0).r;
+    float waterDepth = 1 - depthMapCoord.z;
+    return saturate(saturate(waterDepth - terrainDepth) / _DeepWaterDepth);
+}
+
+ENDHLSL
+
     SubShader
     {
         Tags
@@ -34,19 +76,12 @@ Shader "Custom/Animal Crossing/Water"
 
         Pass
         {
+            Name "ForwardLit"
+    
             HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag
             #pragma multi_compile_vertex _ ANIMAL_CROSSING_SLOPE
-
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            #include "Assets/AnimalCrossing/Shaders/AnimalCrossingCommon.hlsl"
-
-            struct Attributes
-            {
-                float4 positionOS : POSITION;
-                float2 texcoord : TEXCOORD0;
-            };
 
             struct Varyings
             {
@@ -59,20 +94,7 @@ Shader "Custom/Animal Crossing/Water"
             uniform float _UVOffset;
             uniform half4 _DeepWaterColor;
             uniform half4 _ShallowWaterColor;
-            uniform float _DeepWaterDepth;
             uniform float _SpecularHardness;
-
-            TEXTURE2D(_BigWavesNoise); SAMPLER(sampler_BigWavesNoise);
-            uniform float4 _BigWavesNoise_ST;
-            uniform float _BigWavesStrength;
-
-            TEXTURE2D(_SmallWavesNoise); SAMPLER(sampler_SmallWavesNoise);
-            uniform float4 _SmallWavesNoise_ST;
-            uniform float _SmallWavesStrength;
-            uniform float _SmallWavesSpeed;
-
-            TEXTURE2D(_DepthMap); SAMPLER(sampler_DepthMap);
-            uniform float4x4 _DepthMapVP;
 
             TEXTURE2D(_Foam); SAMPLER(sampler_Foam);
             uniform float4 _Foam_ST;
@@ -80,13 +102,6 @@ Shader "Custom/Animal Crossing/Water"
             TEXTURE2D(_CameraColorCopy); SAMPLER(sampler_CameraColorCopy);
 
             uniform float _UnderwaterDistortionStrength;
-
-            float sampleHeight(float4 uv)
-            {
-                float height = (SAMPLE_TEXTURE2D_LOD(_BigWavesNoise, sampler_BigWavesNoise, uv.xy, 0).r * 2.0 - 1.0) * _BigWavesStrength;
-                height += (SAMPLE_TEXTURE2D_LOD(_SmallWavesNoise, sampler_SmallWavesNoise, uv.zw, 0).r * 2.0 - 1.0) * _SmallWavesStrength;
-                return height;
-            }
 
             float3 normalFromHeight(float4 uv, float depthTerm)
             {
@@ -96,14 +111,6 @@ Shader "Custom/Animal Crossing/Water"
                 float t = sampleHeight(uv + float4(0, _UVOffset, 0, _UVOffset)) * heightFactor;
                 float b = sampleHeight(uv - float4(0, _UVOffset, 0, _UVOffset)) * heightFactor;
                 return normalize(float3(l - r, 1, b - t));
-            }
-
-            float getDepthTerm(float3 posWS)
-            {
-                float4 depthMapCoord = mul(_DepthMapVP, float4(posWS, 1)) * 0.5 + 0.5;
-                float terrainDepth = SAMPLE_TEXTURE2D_LOD(_DepthMap, sampler_DepthMap, depthMapCoord.xy, 0).r;
-                float waterDepth = 1 - depthMapCoord.z;
-                return saturate(saturate(waterDepth - terrainDepth) / _DeepWaterDepth);
             }
 
             Varyings vert (Attributes v)
@@ -174,6 +181,47 @@ Shader "Custom/Animal Crossing/Water"
                 // final color
                 float NdotL = saturate(dot(normalWS, _MainLightPosition.xyz));
                 return half4(color.rgb * NdotL, 1) + ambient + specular * NdotL;
+            }
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "TopDownDepth"
+
+            HLSLPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            #pragma multi_compile_vertex _ ANIMAL_CROSSING_SLOPE
+
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+            };
+
+            Varyings vert (Attributes v)
+            {
+                Varyings o = (Varyings) 0;
+
+                float4 flatPosWS = mul(UNITY_MATRIX_M, float4(v.positionOS.xyz, 1));
+
+                float2 bigWavesUV = TRANSFORM_TEX(v.texcoord, _BigWavesNoise) + _Time.xx;
+                float2 smallWavesUV = TRANSFORM_TEX(v.texcoord, _SmallWavesNoise) + _Time.xx * _SmallWavesSpeed;
+                float4 wavesUV = float4(bigWavesUV, smallWavesUV);
+
+                float height = sampleHeight(wavesUV);
+                height *= getDepthTerm(flatPosWS.xyz);
+
+                flatPosWS.y += height;
+
+                o.positionCS = mul(UNITY_MATRIX_VP, flatPosWS);
+                return o;
+            }
+
+            half4 frag (Varyings i) : SV_Target
+            {
+                float a = i.positionCS.z;
+                return half4(a, a, a, 1);
             }
             ENDHLSL
         }

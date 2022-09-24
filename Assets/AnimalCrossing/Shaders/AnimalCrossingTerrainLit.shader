@@ -98,6 +98,7 @@ Shader "Custom/Animal Crossing/Terrain/Lit"
             #pragma shader_feature_local _TERRAIN_INSTANCED_PERPIXEL_NORMAL
 
             #pragma multi_compile_vertex _ ANIMAL_CROSSING_SLOPE
+            #pragma multi_compile _ ANIMAL_CROSSING_WATER_CAUSTICS
 
             #include "Packages/com.unity.render-pipelines.universal/Shaders/Terrain/TerrainLitInput.hlsl"
             #include "Assets/AnimalCrossing/Shaders/AnimalCrossingTerrainLitPasses.hlsl"

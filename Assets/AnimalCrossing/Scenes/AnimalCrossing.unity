@@ -212,14 +212,14 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 80456914}
-  m_LocalRotation: {x: -0, y: -0.32780015, z: -0, w: 0.9447471}
+  m_LocalRotation: {x: 0.20439473, y: -0.32003656, z: 0.0709191, w: 0.92237186}
   m_LocalPosition: {x: -44.7, y: -2.15, z: 10.3}
   m_LocalScale: {x: 4.974438, y: 1.8839, z: 1.8839}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 12
-  m_LocalEulerAnglesHint: {x: 0, y: -38.271, z: 0}
+  m_LocalEulerAnglesHint: {x: 24.989, y: -38.271, z: 0}
 --- !u!1 &396675417
 GameObject:
   m_ObjectHideFlags: 0
@@ -1359,6 +1359,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_Terrain: {fileID: 1321600944}
   m_SideVertexCount: 200
+  m_WaterCausticsMask: {fileID: 2800000, guid: 4a426b443ee8b4cd2a55c08e9c5aadf6, type: 3}
+  m_WaterCausticMask_ST: {x: 10, y: 10, z: 0, w: 0}
 --- !u!1 &2006344762
 GameObject:
   m_ObjectHideFlags: 0

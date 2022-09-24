@@ -4,8 +4,15 @@ using UnityEngine;
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
 public class AnimalCrossingWater : MonoBehaviour
 {
+    const string WATER_CAUSTIC_KEYWORD = "ANIMAL_CROSSING_WATER_CAUSTICS";
+    static readonly int WATER_CAUSTICS_MASK_PROP_ID = Shader.PropertyToID("_WaterCausticsMask");
+    static readonly int WATER_CAUSTICS_MASK_ST_PROP_ID = Shader.PropertyToID("_WaterCausticMask_ST");
+
     [SerializeField] Terrain m_Terrain;
     [SerializeField] int m_SideVertexCount = 200;
+
+    [Space, SerializeField] Texture2D m_WaterCausticsMask;
+    [SerializeField] Vector4 m_WaterCausticMask_ST;
 
     public Bounds TerrainWorldBounds { get; private set; }
     public Renderer Renderer { get; private set; }
@@ -66,7 +73,17 @@ public class AnimalCrossingWater : MonoBehaviour
         Renderer = GetComponent<MeshRenderer>();
         Renderer.SetPropertyBlock(block);
 
+        // setup water caustics
+        Shader.SetGlobalTexture(WATER_CAUSTICS_MASK_PROP_ID, m_WaterCausticsMask);
+        Shader.SetGlobalVector(WATER_CAUSTICS_MASK_ST_PROP_ID, m_WaterCausticMask_ST);
+        Shader.EnableKeyword(WATER_CAUSTIC_KEYWORD);
+
         // it will be drawn manually in AnimalCrossingWaterRenderPass
         Renderer.enabled = false;
+    }
+
+    private void OnDestroy()
+    {
+        Shader.DisableKeyword(WATER_CAUSTIC_KEYWORD);
     }
 }

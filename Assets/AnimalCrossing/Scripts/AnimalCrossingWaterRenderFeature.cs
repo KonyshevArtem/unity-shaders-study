@@ -2,21 +2,29 @@ using UnityEngine.Rendering.Universal;
 
 public class AnimalCrossingWaterRenderFeature : ScriptableRendererFeature
 {
-    AnimalCrossingWaterRenderPass m_Pass;
+    AnimalCrossingWaterRenderPass m_ColorPass;
+    AnimalCrossingWaterDepthPrePass m_DepthPrePass;
+
     AnimalCrossingWater m_Water;
 
     public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
     {
-        if (m_Pass == null || m_Water == null || m_Water.Renderer == null || renderingData.cameraData.isPreviewCamera)
+        if (m_ColorPass == null || m_DepthPrePass == null || m_Water == null ||
+            m_Water.Renderer == null || renderingData.cameraData.isPreviewCamera)
             return;
 
-        m_Pass.Setup(m_Water);
-        renderer.EnqueuePass(m_Pass);
+        m_ColorPass.Setup(m_Water);
+        m_DepthPrePass.Setup(m_Water);
+
+        renderer.EnqueuePass(m_ColorPass);
+        renderer.EnqueuePass(m_DepthPrePass);
     }
 
     public override void Create()
     {
-        m_Pass = new AnimalCrossingWaterRenderPass();
+        m_ColorPass = new AnimalCrossingWaterRenderPass();
+        m_DepthPrePass = new AnimalCrossingWaterDepthPrePass();
+
         m_Water = FindObjectOfType<AnimalCrossingWater>();
     }
 }

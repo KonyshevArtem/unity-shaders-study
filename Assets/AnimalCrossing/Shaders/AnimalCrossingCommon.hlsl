@@ -20,4 +20,28 @@ float3 ApplySlope(float3 positionOS)
     #endif
 }
 
+TEXTURE2D(_WaterCausticsMask); SAMPLER(sampler_WaterCausticsMask);
+TEXTURE2D(_WaterDepth); SAMPLER(sampler_WaterDepth);
+uniform float4 _WaterCausticMask_ST;
+uniform float4x4 _TopDownDepthVP;
+
+float SampleWaterCaustic(float3 posWS, float3 normalWS)
+{
+    #ifdef ANIMAL_CROSSING_WATER_CAUSTICS
+    const float bias = 0.1;
+
+    float NdotUp = saturate(dot(normalWS, float3(0, 1, 0)));
+    float3 causticUV = mul(_TopDownDepthVP, float4(posWS, 1)).xyz;
+    float depth = causticUV.z * 0.5 + 0.5 - bias;
+    float waterDepth = 1 - SAMPLE_TEXTURE2D(_WaterDepth, sampler_WaterDepth, causticUV.xy).r;
+
+    causticUV.xy = TRANSFORM_TEX(causticUV.xy, _WaterCausticMask);
+    half caustics = SAMPLE_TEXTURE2D(_WaterCausticsMask, sampler_WaterCausticsMask, causticUV.xy + _Time.xx).r;
+
+    return smoothstep(0.05, 0.15, depth - waterDepth) * caustics * NdotUp;
+    #else
+    return 0;
+    #endif
+}
+
 #endif
