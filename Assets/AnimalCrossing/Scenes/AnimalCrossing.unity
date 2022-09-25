@@ -1361,6 +1361,9 @@ MonoBehaviour:
   m_SideVertexCount: 200
   m_WaterCausticsMask: {fileID: 2800000, guid: 4a426b443ee8b4cd2a55c08e9c5aadf6, type: 3}
   m_WaterCausticMask_ST: {x: 10, y: 10, z: 0, w: 0}
+  m_WaterCausticsDistortion: {fileID: 2800000, guid: 9c0f929b79f5a417ba31e24fb783375c,
+    type: 3}
+  m_WaterCausticsDistortion_ST: {x: 5, y: 5, z: 0, w: 0}
 --- !u!1 &2006344762
 GameObject:
   m_ObjectHideFlags: 0

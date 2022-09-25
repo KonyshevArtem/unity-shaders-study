@@ -21,8 +21,10 @@ float3 ApplySlope(float3 positionOS)
 }
 
 TEXTURE2D(_WaterCausticsMask); SAMPLER(sampler_WaterCausticsMask);
+TEXTURE2D(_WaterCausticsDistortion); SAMPLER(sampler_WaterCausticsDistortion);
 TEXTURE2D(_WaterDepth); SAMPLER(sampler_WaterDepth);
 uniform float4 _WaterCausticMask_ST;
+uniform float4 _WaterCausticsDistortion_ST;
 uniform float4x4 _TopDownDepthVP;
 
 float SampleWaterCaustic(float3 posWS, float3 normalWS)
@@ -34,8 +36,9 @@ float SampleWaterCaustic(float3 posWS, float3 normalWS)
     float3 causticUV = mul(_TopDownDepthVP, float4(posWS, 1)).xyz;
     float depth = causticUV.z * 0.5 + 0.5 - bias;
     float waterDepth = 1 - SAMPLE_TEXTURE2D(_WaterDepth, sampler_WaterDepth, causticUV.xy).r;
+    float2 distortion = SAMPLE_TEXTURE2D(_WaterCausticsDistortion, sampler_WaterCausticsDistortion, TRANSFORM_TEX(causticUV.xy, _WaterCausticsDistortion)).rg;
 
-    causticUV.xy = TRANSFORM_TEX(causticUV.xy, _WaterCausticMask);
+    causticUV.xy = TRANSFORM_TEX(causticUV.xy, _WaterCausticMask) + distortion;
     half caustics = SAMPLE_TEXTURE2D(_WaterCausticsMask, sampler_WaterCausticsMask, causticUV.xy + _Time.xx).r;
 
     return smoothstep(0.05, 0.15, depth - waterDepth) * caustics * NdotUp;
