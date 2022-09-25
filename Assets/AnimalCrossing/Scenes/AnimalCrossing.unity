@@ -1363,7 +1363,7 @@ MonoBehaviour:
   m_WaterCausticMask_ST: {x: 10, y: 10, z: 0, w: 0}
   m_WaterCausticsDistortion: {fileID: 2800000, guid: 9c0f929b79f5a417ba31e24fb783375c,
     type: 3}
-  m_WaterCausticsDistortion_ST: {x: 5, y: 5, z: 0, w: 0}
+  m_WaterCausticsDistortion_ST: {x: 1.2, y: 1.2, z: 0, w: 0}
 --- !u!1 &2006344762
 GameObject:
   m_ObjectHideFlags: 0
