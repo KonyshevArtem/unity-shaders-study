@@ -58,8 +58,12 @@ float getDepthTerm(float3 posWS)
 {
     float4 depthMapCoord = mul(_TopDownDepthVP, float4(posWS, 1)) * 0.5 + 0.5;
     float terrainDepth = SAMPLE_TEXTURE2D_LOD(_DepthMap, sampler_DepthMap, depthMapCoord.xy, 0).r;
-    float waterDepth = 1 - depthMapCoord.z;
-    return saturate(saturate(waterDepth - terrainDepth) / _DeepWaterDepth);
+    #if UNITY_UV_STARTS_AT_TOP
+    float depthDiff = 1 - depthMapCoord.z - terrainDepth;
+    #else
+    float depthDiff = terrainDepth - depthMapCoord.z;
+    #endif
+    return saturate(saturate(depthDiff) / _DeepWaterDepth);
 }
 
 ENDHLSL

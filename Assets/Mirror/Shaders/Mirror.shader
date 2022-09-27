@@ -50,6 +50,9 @@ Shader "Custom/Mirror"
                 float2 uv = i.positionCS * (_ScreenParams.zw - 1.0);
                 uv.x = 1 - uv.x;
                 uv.y = lerp(uv.y, 1 - uv.y, saturate(_ProjectionParams.x));
+                #if !UNITY_UV_STARTS_AT_TOP
+                uv.y = 1 - uv.y;
+                #endif
                 half3 mirrorColor = SAMPLE_TEXTURE2D(_MirrorTex, sampler_MirrorTex, uv).rgb * _Tint;
                 half grainMask = 1 - SAMPLE_TEXTURE2D(_GrainMask, sampler_GrainMask, TRANSFORM_TEX(i.uv, _GrainMask)).r;
                 half3 color = lerp(mirrorColor, _GrainColor.xyz, grainMask * _GrainColor.a);

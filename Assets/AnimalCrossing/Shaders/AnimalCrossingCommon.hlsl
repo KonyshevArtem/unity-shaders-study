@@ -35,7 +35,10 @@ float SampleWaterCaustic(float3 posWS, float3 normalWS)
     float NdotUp = saturate(dot(normalWS, float3(0, 1, 0)));
     float3 causticUV = mul(_TopDownDepthVP, float4(posWS, 1)).xyz;
     float depth = causticUV.z * 0.5 + 0.5 - bias;
-    float waterDepth = 1 - SAMPLE_TEXTURE2D(_WaterDepth, sampler_WaterDepth, causticUV.xy).r;
+    float waterDepth = SAMPLE_TEXTURE2D(_WaterDepth, sampler_WaterDepth, causticUV.xy).r;
+    #if UNITY_UV_STARTS_AT_TOP
+    waterDepth = 1 - waterDepth;
+    #endif
     float2 distortion = SAMPLE_TEXTURE2D(_WaterCausticsDistortion, sampler_WaterCausticsDistortion, TRANSFORM_TEX(causticUV.xy, _WaterCausticsDistortion)).rg;
 
     causticUV.xy = TRANSFORM_TEX(causticUV.xy, _WaterCausticMask) + distortion;
