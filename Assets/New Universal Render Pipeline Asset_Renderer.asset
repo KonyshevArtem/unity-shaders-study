@@ -48,8 +48,8 @@ MonoBehaviour:
       type: 3}
   m_RendererFeatures:
   - {fileID: -4527183903245702946}
-  - {fileID: -7211533042841048327}
-  m_RendererFeatureMap: de682cde39362cc1f9aa77e7e77ceb9b
+  - {fileID: 3657447218584926018}
+  m_RendererFeatureMap: de682cde39362cc142b77e08dedcc132
   m_UseNativeRenderPass: 0
   postProcessData: {fileID: 0}
   xrSystemData: {fileID: 11400000, guid: 60e1133243b97e347b653163a8c01b64, type: 2}
@@ -89,3 +89,16 @@ MonoBehaviour:
   m_ClusteredRendering: 0
   m_TileSize: 32
   m_IntermediateTextureMode: 0
+--- !u!114 &3657447218584926018
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 282849d2dba5143c4a9c04ac42fc6b4f, type: 3}
+  m_Name: AnimalCrossingRenderFeature
+  m_EditorClassIdentifier: 
+  m_Active: 1
