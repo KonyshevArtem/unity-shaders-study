@@ -148,6 +148,13 @@ ENDHLSL
                 // calc normal from height map
                 float depthTerm = getDepthTerm(i.flatPositionWS.xyz);
                 float3 normalOS = normalFromHeight(i.wavesUV, depthTerm);
+                float3 tangentOS = normalize(cross(normalOS, float3(0, 0, 1)));
+                float3 bitangentOS = normalize(cross(tangentOS, normalOS));
+                float3x3 tbn = float3x3(tangentOS, bitangentOS, normalOS);
+
+                float3 normalTS = SAMPLE_TEXTURE2D(_RippleNormalMap, sampler_RippleNormalMap, getRippleUv(i.uv)).xyz * 2 - 1;
+                normalOS = normalize(mul(tbn, normalTS));
+
                 float3 normalWS = normalize(mul(UNITY_MATRIX_M, float4(normalOS, 0)).xyz);
                 float3 normalCS = normalize(mul(UNITY_MATRIX_VP, float4(normalWS, 0)).xyz);
 

@@ -1,7 +1,11 @@
+using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
 public class AnimalCrossingRenderFeature : ScriptableRendererFeature
 {
+    [SerializeField] Shader m_RippleShader;
+    [SerializeField] Texture2D m_RippleNormal;
+
     AnimalCrossingWaterRenderPass m_WaterColorPass;
     AnimalCrossingWaterDepthPrePass m_WaterDepthPrePass;
 
@@ -34,9 +38,20 @@ public class AnimalCrossingRenderFeature : ScriptableRendererFeature
     {
         m_WaterColorPass = new AnimalCrossingWaterRenderPass();
         m_WaterDepthPrePass = new AnimalCrossingWaterDepthPrePass();
-        m_RainPass = new AnimalCrossingRainRenderPass();
+        m_RainPass = new AnimalCrossingRainRenderPass(m_RippleShader, m_RippleNormal);
 
         m_Water = FindObjectOfType<AnimalCrossingWater>();
         m_Rain = FindObjectOfType<AnimalCrossingRain>();
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+
+        if (m_RainPass != null)
+        {
+            m_RainPass.Dispose();
+            m_RainPass = null;
+        }
     }
 }

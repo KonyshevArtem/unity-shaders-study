@@ -50,4 +50,12 @@ float SampleWaterCaustic(float3 posWS, float3 normalWS)
     #endif
 }
 
+TEXTURE2D(_RippleNormalMap); SAMPLER(sampler_RippleNormalMap);
+uniform float4 _VisibleAreaOffsetScale;
+
+float2 getRippleUv(float2 worldUV)
+{
+    return (worldUV - _VisibleAreaOffsetScale.xy) * _VisibleAreaOffsetScale.zw;
+}
+
 #endif

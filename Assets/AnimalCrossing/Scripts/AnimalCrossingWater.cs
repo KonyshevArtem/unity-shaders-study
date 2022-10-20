@@ -10,6 +10,8 @@ public class AnimalCrossingWater : MonoBehaviour
     static readonly int WATER_CAUSTICS_DISTORTION_PROP_ID = Shader.PropertyToID("_WaterCausticsDistortion");
     static readonly int WATER_CAUSTICS_DISTORTION_ST_PROP_ID = Shader.PropertyToID("_WaterCausticsDistortion_ST");
 
+    [SerializeField] Camera m_Camera;
+
     [SerializeField] Terrain m_Terrain;
     [SerializeField] int m_SideVertexCount = 200;
 
@@ -21,6 +23,8 @@ public class AnimalCrossingWater : MonoBehaviour
 
     public Bounds TerrainWorldBounds { get; private set; }
     public Renderer Renderer { get; private set; }
+
+    Vector4 m_LastFrameVisibleAreaOffsetScale;
 
     void Awake()
     {
@@ -84,6 +88,58 @@ public class AnimalCrossingWater : MonoBehaviour
 
         // it will be drawn manually in AnimalCrossingWaterRenderPass
         Renderer.enabled = false;
+    }
+
+    void Update()
+    {
+        Matrix4x4 projInv = m_Camera.projectionMatrix.inverse;
+        Matrix4x4 viewInv = m_Camera.transform.localToWorldMatrix;
+        Vector3 cameraPosWS = m_Camera.transform.position;
+
+        Vector4[] cornersWS = new[]
+        {
+                new Vector4(1, 1, 1, 1),
+                new Vector4(-1, 1, 1, 1),
+                new Vector4(-1, -1, 1, 1),
+                new Vector4(1, -1, 1, 1)
+            };
+
+        Vector2 min = new Vector2(float.MaxValue, float.MaxValue);
+        Vector2 max = new Vector4(float.MinValue, float.MinValue);
+        for (int i = 0; i < cornersWS.Length; i++)
+        {
+            cornersWS[i] = projInv * cornersWS[i];
+            cornersWS[i].z *= -1;
+            cornersWS[i] /= cornersWS[i].w;
+            cornersWS[i] = viewInv * cornersWS[i];
+
+            Vector3 l = Vector3.Normalize(new Vector3(cornersWS[i].x, cornersWS[i].y, cornersWS[i].z) - cameraPosWS);
+            float d = Vector3.Dot(Vector3.zero - cameraPosWS, Vector3.up) / Vector3.Dot(l, Vector3.up);
+            cornersWS[i] = cameraPosWS + l * d;
+
+            min.x = Mathf.Min(min.x, cornersWS[i].x);
+            min.y = Mathf.Min(min.y, cornersWS[i].z);
+            max.x = Mathf.Max(max.x, cornersWS[i].x);
+            max.y = Mathf.Max(max.y, cornersWS[i].z);
+        }
+
+        Vector2 center = (min + max) * 0.5f;
+        float side = Mathf.Max(max.x - min.x, max.y - min.y);
+        min = center - new Vector2(side, side) * 0.5f;
+        max = center + new Vector2(side, side) * 0.5f;
+
+        Vector4 offsetScale = new Vector4();
+        offsetScale.x = (min.x - TerrainWorldBounds.min.x) / TerrainWorldBounds.size.x;
+        offsetScale.y = (min.y - TerrainWorldBounds.min.z) / TerrainWorldBounds.size.z;
+
+        Vector2 size = max - min;
+        offsetScale.z = TerrainWorldBounds.size.x / size.x;
+        offsetScale.w = TerrainWorldBounds.size.z / size.y;
+
+        Shader.SetGlobalVector("_LastFrameVisibleAreaOffsetScale", m_LastFrameVisibleAreaOffsetScale);
+        Shader.SetGlobalVector("_VisibleAreaOffsetScale", offsetScale);
+
+        m_LastFrameVisibleAreaOffsetScale = offsetScale;
     }
 
     void OnDestroy()

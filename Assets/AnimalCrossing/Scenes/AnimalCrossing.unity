@@ -1457,6 +1457,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2471e9ce37dfb48c2884c990b1fbe63c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  m_Camera: {fileID: 816938568}
   m_Terrain: {fileID: 1321600944}
   m_SideVertexCount: 200
   m_WaterCausticsMask: {fileID: 2800000, guid: 4a426b443ee8b4cd2a55c08e9c5aadf6, type: 3}
