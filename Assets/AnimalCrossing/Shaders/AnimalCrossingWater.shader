@@ -90,7 +90,7 @@ ENDHLSL
             struct Varyings
             {
                 float4 positionCS : SV_POSITION;
-                float4 flatPositionWS : TEXCOORD2;
+                float3 flatPositionWS : TEXCOORD2;
                 float4 wavesUV: TEXCOORD1;
                 float2 uv : TEXCOORD0;
             };
@@ -123,7 +123,7 @@ ENDHLSL
 
                 Varyings o = (Varyings) 0;
 
-                float4 flatPosWS = mul(UNITY_MATRIX_M, float4(v.positionOS.xyz, 1));
+                float3 flatPosWS = mul(UNITY_MATRIX_M, float4(v.positionOS.xyz, 1)).xyz;
                 float4 slopedPosWS = mul(UNITY_MATRIX_M, float4(slopedPositionOS, 1));
 
                 float2 bigWavesUV = TRANSFORM_TEX(v.texcoord, _BigWavesNoise) + _Time.xx;
@@ -131,7 +131,7 @@ ENDHLSL
                 float4 wavesUV = float4(bigWavesUV, smallWavesUV);
 
                 float height = sampleHeight(wavesUV);
-                height *= max(0.1, getDepthTerm(flatPosWS.xyz));
+                height *= max(0.1, getDepthTerm(flatPosWS));
 
                 flatPosWS.y += height;
                 slopedPosWS.y += height;
@@ -146,20 +146,20 @@ ENDHLSL
             half4 frag (Varyings i) : SV_Target
             {
                 // calc normal from height map
-                float depthTerm = getDepthTerm(i.flatPositionWS.xyz);
+                float depthTerm = getDepthTerm(i.flatPositionWS);
                 float3 normalOS = normalFromHeight(i.wavesUV, depthTerm);
                 float3 tangentOS = normalize(cross(normalOS, float3(0, 0, 1)));
                 float3 bitangentOS = normalize(cross(tangentOS, normalOS));
                 float3x3 tbn = float3x3(tangentOS, bitangentOS, normalOS);
 
-                float3 normalTS = SAMPLE_TEXTURE2D(_RippleNormalMap, sampler_RippleNormalMap, getRippleUv(i.uv)).xyz * 2 - 1;
-                normalOS = normalize(mul(tbn, normalTS));
+                float3 rippleNormalTS = getRippleNormal(i.flatPositionWS);
+                normalOS = normalize(mul(tbn, rippleNormalTS));
 
                 float3 normalWS = normalize(mul(UNITY_MATRIX_M, float4(normalOS, 0)).xyz);
                 float3 normalCS = normalize(mul(UNITY_MATRIX_VP, float4(normalWS, 0)).xyz);
 
                 // specular
-                float3 viewDirWS = GetWorldSpaceNormalizeViewDir(i.flatPositionWS.xyz);
+                float3 viewDirWS = GetWorldSpaceNormalizeViewDir(i.flatPositionWS);
                 float3 H = normalize(viewDirWS + _MainLightPosition.xyz);
 		        float NdotH = saturate(dot(normalWS, H));
 		        float specularIntensity = pow(NdotH, _SpecularHardness);

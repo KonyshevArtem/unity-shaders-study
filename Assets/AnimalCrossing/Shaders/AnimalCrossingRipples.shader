@@ -86,12 +86,12 @@ ENDHLSL
 
 			HLSLPROGRAM
 
-			uniform float4 _VisibleAreaOffsetScale;
-			uniform float4 _LastFrameVisibleAreaOffsetScale;
+			uniform float4 _VisibleArea;
+			uniform float4 _LastFrameVisibleArea;
 
 			half4 frag(Varyings i) : SV_Target
 			{
-				float2 uvDiff = (_VisibleAreaOffsetScale.xy - _LastFrameVisibleAreaOffsetScale.xy) * _VisibleAreaOffsetScale.zw;
+				float2 uvDiff = (_VisibleArea.xy - _LastFrameVisibleArea.xy) * _VisibleArea.zw;
 				return SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv + uvDiff);
 			}
 

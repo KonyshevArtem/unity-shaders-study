@@ -24,7 +24,7 @@ public class AnimalCrossingWater : MonoBehaviour
     public Bounds TerrainWorldBounds { get; private set; }
     public Renderer Renderer { get; private set; }
 
-    Vector4 m_LastFrameVisibleAreaOffsetScale;
+    Vector4 m_LastFrameVisibleArea;
 
     void Awake()
     {
@@ -128,18 +128,13 @@ public class AnimalCrossingWater : MonoBehaviour
         min = center - new Vector2(side, side) * 0.5f;
         max = center + new Vector2(side, side) * 0.5f;
 
-        Vector4 offsetScale = new Vector4();
-        offsetScale.x = (min.x - TerrainWorldBounds.min.x) / TerrainWorldBounds.size.x;
-        offsetScale.y = (min.y - TerrainWorldBounds.min.z) / TerrainWorldBounds.size.z;
-
         Vector2 size = max - min;
-        offsetScale.z = TerrainWorldBounds.size.x / size.x;
-        offsetScale.w = TerrainWorldBounds.size.z / size.y;
+        Vector4 visibleArea = new Vector4(min.x, min.y, 1.0f / size.x, 1.0f / size.y);
 
-        Shader.SetGlobalVector("_LastFrameVisibleAreaOffsetScale", m_LastFrameVisibleAreaOffsetScale);
-        Shader.SetGlobalVector("_VisibleAreaOffsetScale", offsetScale);
+        Shader.SetGlobalVector("_LastFrameVisibleArea", m_LastFrameVisibleArea);
+        Shader.SetGlobalVector("_VisibleArea", visibleArea);
 
-        m_LastFrameVisibleAreaOffsetScale = offsetScale;
+        m_LastFrameVisibleArea = visibleArea;
     }
 
     void OnDestroy()

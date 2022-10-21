@@ -4,7 +4,7 @@ using UnityEngine.Rendering.Universal;
 
 public class AnimalCrossingRainRenderPass : ScriptableRenderPass
 {
-    const int RAIN_DROP_SIZE_PX = 16;
+    const int RAIN_DROP_SIZE_PX = 10;
     const int RAIN_DROP_NORMAL_MAP_SIZE_PX = 1024;
 
     const string PROFILER_TAG = "Rain";

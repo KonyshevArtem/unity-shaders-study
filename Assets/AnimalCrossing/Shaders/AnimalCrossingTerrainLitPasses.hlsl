@@ -23,14 +23,11 @@ struct Varyings
         float4 uvSplat23                : TEXCOORD2; // xy: splat2, zw: splat3
     #endif
 
-    #if defined(_NORMALMAP) && !defined(ENABLE_TERRAIN_PERPIXEL_NORMAL)
+
         half4 normal                    : TEXCOORD3;    // xyz: normal, w: viewDir.x
         half4 tangent                   : TEXCOORD4;    // xyz: tangent, w: viewDir.y
         half4 bitangent                 : TEXCOORD5;    // xyz: bitangent, w: viewDir.z
-    #else
-        half3 normal                    : TEXCOORD3;
-        half3 vertexSH                  : TEXCOORD4; // SH
-    #endif
+        half3 vertexSH                  : TEXCOORD11; // SH
 
     #ifdef _ADDITIONAL_LIGHTS_VERTEX
         half4 fogFactorAndVertexLight   : TEXCOORD6; // x: fogFactor, yzw: vertex light
@@ -48,9 +45,7 @@ struct Varyings
     float2 dynamicLightmapUV        : TEXCOORD9;
 #endif
 
-#ifdef ANIMAL_CROSSING_WATER_CAUSTICS
     float3 flatPositionWS           : TEXCOORD10;
-#endif
 
     float4 clipPos                  : SV_POSITION;
     UNITY_VERTEX_OUTPUT_STEREO
@@ -63,22 +58,18 @@ void InitializeInputData(Varyings IN, half3 normalTS, out InputData inputData)
     inputData.positionWS = IN.positionWS;
     inputData.positionCS = IN.clipPos;
 
-    #if defined(_NORMALMAP) && !defined(ENABLE_TERRAIN_PERPIXEL_NORMAL)
+    #if !defined(ENABLE_TERRAIN_PERPIXEL_NORMAL)
         half3 viewDirWS = half3(IN.normal.w, IN.tangent.w, IN.bitangent.w);
         inputData.tangentToWorld = half3x3(-IN.tangent.xyz, IN.bitangent.xyz, IN.normal.xyz);
         inputData.normalWS = TransformTangentToWorld(normalTS, inputData.tangentToWorld);
-        half3 SH = 0;
-    #elif defined(ENABLE_TERRAIN_PERPIXEL_NORMAL)
+        half3 SH = IN.vertexSH;
+    #else
         half3 viewDirWS = GetWorldSpaceNormalizeViewDir(IN.positionWS);
         float2 sampleCoords = (IN.uvMainAndLM.xy / _TerrainHeightmapRecipSize.zw + 0.5f) * _TerrainHeightmapRecipSize.xy;
         half3 normalWS = TransformObjectToWorldNormal(normalize(SAMPLE_TEXTURE2D(_TerrainNormalmapTexture, sampler_TerrainNormalmapTexture, sampleCoords).rgb * 2 - 1));
         half3 tangentWS = cross(GetObjectToWorldMatrix()._13_23_33, normalWS);
         inputData.normalWS = TransformTangentToWorld(normalTS, half3x3(-tangentWS, cross(normalWS, tangentWS), normalWS));
         half3 SH = 0;
-    #else
-        half3 viewDirWS = GetWorldSpaceNormalizeViewDir(IN.positionWS);
-        inputData.normalWS = IN.normal;
-        half3 SH = IN.vertexSH;
     #endif
 
     inputData.normalWS = NormalizeNormalPerPixel(inputData.normalWS);
@@ -245,9 +236,7 @@ Varyings SplatmapVert(Attributes v)
     UNITY_SETUP_INSTANCE_ID(v);
     UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
 
-#ifdef ANIMAL_CROSSING_WATER_CAUSTICS
     o.flatPositionWS = mul(UNITY_MATRIX_M, float4(v.positionOS.xyz, 1)).xyz;
-#endif
 
     v.positionOS.xyz = ApplySlope(v.positionOS.xyz);
 
@@ -269,7 +258,6 @@ Varyings SplatmapVert(Attributes v)
     o.dynamicLightmapUV = v.texcoord * unity_DynamicLightmapST.xy + unity_DynamicLightmapST.zw;
 #endif
 
-    #if defined(_NORMALMAP) && !defined(ENABLE_TERRAIN_PERPIXEL_NORMAL)
         half3 viewDirWS = GetWorldSpaceNormalizeViewDir(Attributes.positionWS);
         float4 vertexTangent = float4(cross(float3(0, 0, 1), v.normalOS), 1.0);
         VertexNormalInputs normalInput = GetVertexNormalInputs(v.normalOS, vertexTangent);
@@ -277,10 +265,7 @@ Varyings SplatmapVert(Attributes v)
         o.normal = half4(normalInput.normalWS, viewDirWS.x);
         o.tangent = half4(normalInput.tangentWS, viewDirWS.y);
         o.bitangent = half4(normalInput.bitangentWS, viewDirWS.z);
-    #else
-        o.normal = TransformObjectToWorldNormal(v.normalOS);
         o.vertexSH = SampleSH(o.normal);
-    #endif
 
     half fogFactor = 0;
     #if !defined(_FOG_FRAGMENT)
@@ -340,7 +325,7 @@ half4 SplatmapFragment(Varyings IN) : SV_TARGET
     ClipHoles(IN.uvMainAndLM.xy);
 #endif
 
-    half3 normalTS = half3(0.0h, 0.0h, 1.0h);
+    half3 normalTS = getRippleNormal(IN.flatPositionWS);// half3(0.0h, 0.0h, 1.0h);
 #ifdef TERRAIN_SPLAT_BASEPASS
     half3 albedo = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, IN.uvMainAndLM.xy).rgb;
     half smoothness = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, IN.uvMainAndLM.xy).a;

@@ -3,6 +3,8 @@
 
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
+/// Slope ///
+
 uniform float _SlopeFactor;
 uniform float _SlopeOffset;
 
@@ -19,6 +21,11 @@ float3 ApplySlope(float3 positionOS)
     return positionOS;
     #endif
 }
+
+/// ---- ///
+
+
+/// Water Caustics ///
 
 TEXTURE2D(_WaterCausticsMask); SAMPLER(sampler_WaterCausticsMask);
 TEXTURE2D(_WaterCausticsDistortion); SAMPLER(sampler_WaterCausticsDistortion);
@@ -50,12 +57,20 @@ float SampleWaterCaustic(float3 posWS, float3 normalWS)
     #endif
 }
 
-TEXTURE2D(_RippleNormalMap); SAMPLER(sampler_RippleNormalMap);
-uniform float4 _VisibleAreaOffsetScale;
+/// ---- ///
 
-float2 getRippleUv(float2 worldUV)
+
+/// Ripples ///
+
+TEXTURE2D(_RippleNormalMap); SAMPLER(sampler_RippleNormalMap);
+uniform float4 _VisibleArea; // xy - posWS, zw - 1/size
+
+float3 getRippleNormal(float3 posWS)
 {
-    return (worldUV - _VisibleAreaOffsetScale.xy) * _VisibleAreaOffsetScale.zw;
+    float2 uv = (posWS.xz - _VisibleArea.xy) * _VisibleArea.zw;
+    return SAMPLE_TEXTURE2D(_RippleNormalMap, sampler_RippleNormalMap, uv).xyz * 2 - 1;
 }
+
+/// ---- ///
 
 #endif
