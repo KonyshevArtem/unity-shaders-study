@@ -10,6 +10,9 @@ HLSLINCLUDE
 #pragma vertex vert
 #pragma fragment frag
 
+#define ANIMAL_CROSSING_RAIN_RIPPLES
+
+#include "Assets/AnimalCrossing/Shaders/AnimalCrossingCommon.hlsl"
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
 struct Attributes
@@ -54,10 +57,10 @@ ENDHLSL
 			half4 frag(Varyings i) : SV_Target
 			{
 				float2 normalMapUV = i.positionCS.xy * _OneOverSize;
-				float3 currentNormal = SAMPLE_TEXTURE2D(_NormalMap, sampler_NormalMap, normalMapUV).rgb * 2 - 1;
+				float3 currentNormal = reconstructNormal(unpackNormal(SAMPLE_TEXTURE2D(_NormalMap, sampler_NormalMap, normalMapUV)) * 2 - 1);
 				float3 rippleNormal = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv).rgb * 2 - 1;
-				float3 normal = normalize(float3(currentNormal.xy + rippleNormal.xy, currentNormal.z));
-				return half4(normal * 0.5 + 0.5, 0);
+				float2 normalXY = normalize(float3(currentNormal.xy + rippleNormal.xy, currentNormal.z)).xy * 0.5 + 0.5;
+				return packNormal(normalXY);
 			}
 
 			ENDHLSL
@@ -71,10 +74,10 @@ ENDHLSL
 
 			half4 frag(Varyings i) : SV_Target
 			{
-				float3 normal = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv).rgb * 2 - 1;
+				float2 normal = unpackNormal(SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv)) * 2 - 1;
 				float2 diff = 0 - normal.xy;
-				normal.xy += diff * unity_DeltaTime.x * 5;
-				return half4(normalize(normal) * 0.5 + 0.5, 0);
+				normal += diff * unity_DeltaTime.x * 5;
+				return packNormal(normal * 0.5 + 0.5);
 			}
 
 			ENDHLSL
@@ -86,7 +89,6 @@ ENDHLSL
 
 			HLSLPROGRAM
 
-			uniform float4 _VisibleArea;
 			uniform float4 _LastFrameVisibleArea;
 
 			half4 frag(Varyings i) : SV_Target

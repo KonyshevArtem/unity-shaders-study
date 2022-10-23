@@ -3,6 +3,8 @@ using UnityEngine;
 [RequireComponent(typeof(MeshFilter))]
 public class AnimalCrossingRain : MonoBehaviour
 {
+    const string RAIN_RIPPLES_KEYWORD = "ANIMAL_CROSSING_RAIN_RIPPLES";
+
     [SerializeField] Vector2 m_MinRainDropSize;
     [SerializeField] Vector2 m_MaxRainDropSize;
     [SerializeField] int m_RainDropCount = 10;
@@ -59,5 +61,12 @@ public class AnimalCrossingRain : MonoBehaviour
 
         // it will be drawn in separate render pass
         m_Renderer.enabled = false;
+
+        Shader.EnableKeyword(RAIN_RIPPLES_KEYWORD);
+    }
+
+    private void OnDestroy()
+    {
+        Shader.DisableKeyword(RAIN_RIPPLES_KEYWORD);
     }
 }

@@ -86,6 +86,7 @@ ENDHLSL
             #pragma vertex vert
             #pragma fragment frag
             #pragma multi_compile_vertex _ ANIMAL_CROSSING_SLOPE
+            #pragma multi_compile _ ANIMAL_CROSSING_RAIN_RIPPLES
 
             struct Varyings
             {

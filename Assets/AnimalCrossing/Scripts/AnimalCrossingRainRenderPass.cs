@@ -115,7 +115,7 @@ public class AnimalCrossingRainRenderPass : ScriptableRenderPass
             RenderTextureDescriptor desc = new RenderTextureDescriptor(
                 RAIN_DROP_NORMAL_MAP_SIZE_PX,
                 RAIN_DROP_NORMAL_MAP_SIZE_PX,
-                UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_UNorm,
+                UnityEngine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_UNorm,
                 0);
 
             m_RippleNormalMapA = new RenderTexture(desc);
@@ -125,7 +125,7 @@ public class AnimalCrossingRainRenderPass : ScriptableRenderPass
             m_RippleNormalMapB.wrapMode = TextureWrapMode.Repeat;
 
             cmd.SetRenderTarget(RippleNormalMapBack);
-            cmd.ClearRenderTarget(false, true, new Color(0.5f, 0.5f, 1));
+            cmd.ClearRenderTarget(false, true, new Color(0.5f, 1, 0.5f, 1));
         }
     }
 
