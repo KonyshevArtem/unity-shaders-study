@@ -5,20 +5,28 @@
 
 /// Slope ///
 
-uniform float _SlopeFactor;
-uniform float _SlopeOffset;
+uniform float4 _SlopeParams; // xyz - center, w - radius
 
-float3 ApplySlope(float3 positionOS)
+void ApplySlope(inout float3 positionOS, inout float3 normalOS)
 {
     #if ANIMAL_CROSSING_SLOPE
     float3 posWS = mul(UNITY_MATRIX_M, float4(positionOS, 1)).xyz;
-    
-    float dist = max(posWS.z - _WorldSpaceCameraPos.z - _SlopeOffset, 0);
-    posWS.y -= dist * dist * _SlopeFactor;
 
-    return mul(UNITY_MATRIX_I_M, float4(posWS, 1)).xyz;
-    #else
-    return positionOS;
+    float3 projectedPosWS = float3(posWS.x, 0, posWS.z);
+    float3 toCenter = _SlopeParams.xyz - projectedPosWS;
+    toCenter.x = 0;
+    float3 dirToRadius = -normalize(toCenter);
+    float3 toRadius = dirToRadius * _SlopeParams.w;
+
+    projectedPosWS += toCenter + toRadius + dirToRadius * posWS.y;
+    positionOS = mul(UNITY_MATRIX_I_M, float4(projectedPosWS, 1)).xyz;
+
+    float3x3 tbnFromInv = transpose(float3x3(float3(1, 0, 0), float3(0, 0, 1), float3(0, 1, 0)));
+    float3x3 tbnTo = float3x3(float3(1, 0, 0), cross(float3(1, 0, 0), dirToRadius), dirToRadius);
+    float3 normalWS = mul(UNITY_MATRIX_M, float4(normalOS, 0)).xyz;
+    float3 normalTBN = mul(tbnFromInv, float4(normalWS, 0)).xyz;
+    normalWS = mul(tbnTo, float4(normalTBN, 0)).xyz;
+    normalOS = mul(UNITY_MATRIX_I_M, float4(normalWS, 0)).xyz;
     #endif
 }
 

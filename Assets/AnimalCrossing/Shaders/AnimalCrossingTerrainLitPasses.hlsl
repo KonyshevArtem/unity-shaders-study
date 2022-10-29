@@ -51,6 +51,9 @@ struct Varyings
     UNITY_VERTEX_OUTPUT_STEREO
 };
 
+TEXTURE2D(_SmoothnessStrength); SAMPLER(sampler_SmoothnessStrength);
+float4 _SmoothnessStrength_ST;
+
 void InitializeInputData(Varyings IN, half3 normalTS, out InputData inputData)
 {
     inputData = (InputData)0;
@@ -238,7 +241,7 @@ Varyings SplatmapVert(Attributes v)
 
     o.flatPositionWS = mul(UNITY_MATRIX_M, float4(v.positionOS.xyz, 1)).xyz;
 
-    v.positionOS.xyz = ApplySlope(v.positionOS.xyz);
+    ApplySlope(v.positionOS.xyz, v.normalOS);
 
     TerrainInstancing(v.positionOS, v.normalOS, v.texcoord);
 
@@ -370,6 +373,8 @@ half4 SplatmapFragment(Varyings IN) : SV_TARGET
     defaultOcclusion = lerp(defaultOcclusion, maskOcclusion, hasMask);
     half occlusion = dot(splatControl, defaultOcclusion);
 #endif
+
+    smoothness *= SAMPLE_TEXTURE2D(_SmoothnessStrength, sampler_SmoothnessStrength, TRANSFORM_TEX(IN.uvMainAndLM.xy, _SmoothnessStrength)).r;
 
     InputData inputData;
     InitializeInputData(IN, normalTS, inputData);

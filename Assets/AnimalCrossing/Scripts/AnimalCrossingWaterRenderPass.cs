@@ -40,7 +40,12 @@ public class AnimalCrossingWaterRenderPass : ScriptableRenderPass
 
             // copy camera color texture
             {
-                cmd.GetTemporaryRT(m_CameraColorCopyHandle.id, renderingData.cameraData.cameraTargetDescriptor);
+                RenderTextureDescriptor desc = new RenderTextureDescriptor(
+                    (int) (renderingData.cameraData.cameraTargetDescriptor.width * 0.5f),
+                    (int) (renderingData.cameraData.cameraTargetDescriptor.height * 0.5f),
+                    renderingData.cameraData.cameraTargetDescriptor.colorFormat,
+                    0);
+                cmd.GetTemporaryRT(m_CameraColorCopyHandle.id, desc);
                 cmd.Blit(renderingData.cameraData.renderer.cameraColorTarget, m_CameraColorCopyIdentifier);
             }
 

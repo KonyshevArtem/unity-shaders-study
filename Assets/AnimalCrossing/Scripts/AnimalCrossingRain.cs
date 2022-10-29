@@ -180,6 +180,11 @@ public class AnimalCrossingRain : MonoBehaviour
             m_Infos.Dispose();
         }
 
+        if (m_RipplesLifetime.IsCreated)
+        {
+            m_RipplesLifetime.Dispose();
+        }
+
         Shader.DisableKeyword(RAIN_RIPPLES_KEYWORD);
     }
 }

@@ -547,6 +547,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_CullingCamera: {fileID: 1215391156}
+  m_CenterOffset: {x: 0, y: 7.7}
+  m_SlopeRadius: 20
 --- !u!1 &819947304
 GameObject:
   m_ObjectHideFlags: 0
@@ -828,14 +830,14 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1074363818}
-  m_LocalRotation: {x: 0.81706125, y: -0.019963766, z: -0.001679202, w: 0.5762028}
+  m_LocalRotation: {x: 0.6718572, y: -0.0051135737, z: 0.008063491, w: 0.74061924}
   m_LocalPosition: {x: 0, y: 3, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
-  m_LocalEulerAnglesHint: {x: 70.308, y: -175.617, z: -174.113}
+  m_LocalEulerAnglesHint: {x: 95.57901, y: -178.078, z: -177.009}
 --- !u!114 &1074363821
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -868,7 +870,6 @@ GameObject:
   - component: {fileID: 1215391156}
   - component: {fileID: 1215391155}
   - component: {fileID: 1215391154}
-  - component: {fileID: 1215391153}
   m_Layer: 0
   m_Name: Culling Camera
   m_TagString: MainCamera
@@ -891,19 +892,6 @@ Transform:
   m_Father: {fileID: 1409840621}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1215391153
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1215391151}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 76f27d0daf6984d0593f6715e27c3875, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_CullingCamera: {fileID: 0}
 --- !u!114 &1215391154
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1361,6 +1349,72 @@ Transform:
   m_Father: {fileID: 816938569}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: -21.595, y: 0, z: 0}
+--- !u!1 &1700933247
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1700933249}
+  - component: {fileID: 1700933248}
+  m_Layer: 0
+  m_Name: ReflectionProbe
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!215 &1700933248
+ReflectionProbe:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1700933247}
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Type: 0
+  m_Mode: 2
+  m_RefreshMode: 0
+  m_TimeSlicingMode: 0
+  m_Resolution: 128
+  m_UpdateFrequency: 0
+  m_BoxSize: {x: 100, y: 10, z: 100}
+  m_BoxOffset: {x: 0, y: 0, z: 0}
+  m_NearClip: 0.3
+  m_FarClip: 1000
+  m_ShadowDistance: 100
+  m_ClearFlags: 1
+  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_CullingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IntensityMultiplier: 1
+  m_BlendDistance: 1
+  m_HDR: 1
+  m_BoxProjection: 0
+  m_RenderDynamicObjects: 0
+  m_UseOcclusionCulling: 1
+  m_Importance: 1
+  m_CustomBakedTexture: {fileID: 8900000, guid: 1331a26d2843a1148a23d5ddc81629dc,
+    type: 3}
+--- !u!4 &1700933249
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1700933247}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 13
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1888220260
 GameObject:
   m_ObjectHideFlags: 0

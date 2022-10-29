@@ -3,8 +3,6 @@ Shader "Custom/Animal Crossing/Standard"
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
-        _SlopeFactor ("Slope Factor", Float) = 0
-        _SlopeOffset ("Slope Offset", Float) = 0
     }
     SubShader
     {

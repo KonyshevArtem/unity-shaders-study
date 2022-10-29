@@ -13,9 +13,6 @@ Shader "Custom/Animal Crossing/Water"
         _SmallWavesStrength("Small Waves Strength", Float) = 1
         _SmallWavesSpeed("Small Waves Speed", Float) = 1
 
-        _SlopeFactor ("Slope Factor", Float) = 0
-        _SlopeOffset ("Slope Offset", Float) = 0
-
         _SpecularHardness("Specular Hardness", Float) = 30
 
         _Foam("Foam", 2D) = "white"
@@ -120,7 +117,9 @@ ENDHLSL
 
             Varyings vert (Attributes v)
             {
-                float3 slopedPositionOS = ApplySlope(v.positionOS.xyz);
+                float3 slopedPositionOS = v.positionOS.xyz;
+                float3 normalOS = float3(0, 0, 0);
+                ApplySlope(slopedPositionOS, normalOS);
 
                 Varyings o = (Varyings) 0;
 

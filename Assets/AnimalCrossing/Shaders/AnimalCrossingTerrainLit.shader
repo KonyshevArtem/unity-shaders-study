@@ -39,8 +39,7 @@ Shader "Custom/Animal Crossing/Terrain/Lit"
 
         [ToggleUI] _EnableInstancedPerPixelNormal("Enable Instanced per-pixel normal", Float) = 1.0
 
-        _SlopeFactor ("Slope Factor", Float) = 0
-        _SlopeOffset ("Slope Offset", Float) = 0
+        _SmoothnessStrength ("Smoothess Strength", 2D) = "black" {}
     }
 
     HLSLINCLUDE
