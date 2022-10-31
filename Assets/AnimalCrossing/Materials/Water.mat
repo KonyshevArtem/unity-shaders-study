@@ -129,7 +129,7 @@ Material:
     - _SlopeOffset: 7
     - _SmallWavesSpeed: 1
     - _SmallWavesStrength: 0.5
-    - _Smoothness: 0.5
+    - _Smoothness: 0.743
     - _SmoothnessTextureChannel: 0
     - _SpecularHardness: 30
     - _SpecularHighlights: 1

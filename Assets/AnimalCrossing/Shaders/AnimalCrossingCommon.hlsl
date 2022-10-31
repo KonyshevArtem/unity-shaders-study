@@ -7,27 +7,52 @@
 
 uniform float4 _SlopeParams; // xyz - center, w - radius
 
+struct SlopeConfig
+{
+    float3 slopedPosWS;
+    float3 dirToRadius;
+};
+
+void ApplySlopeToNormal(float3 dirToRadius, inout float3 normalOS)
+{
+    float3x3 tbnFromInv = transpose(float3x3(float3(1, 0, 0), float3(0, 0, 1), float3(0, 1, 0)));
+    float3x3 tbnTo = float3x3(float3(1, 0, 0), cross(float3(1, 0, 0), dirToRadius), dirToRadius);
+    float3 normalWS = mul(UNITY_MATRIX_M, float4(normalOS, 0)).xyz;
+    float3 normalTBN = mul(tbnFromInv, normalWS).xyz;
+    normalWS = mul(tbnTo, normalTBN).xyz;
+    normalOS = mul(UNITY_MATRIX_I_M, float4(normalWS, 0)).xyz;
+}
+
+SlopeConfig GetSlopeConfig(float3 positionWS)
+{
+    SlopeConfig config;
+    config.slopedPosWS = float3(positionWS.x, 0, positionWS.z);
+    float3 toCenter = _SlopeParams.xyz - config.slopedPosWS;
+    toCenter.x = 0;
+    config.dirToRadius = -normalize(toCenter);
+    float3 toRadius = config.dirToRadius * _SlopeParams.w;
+    config.slopedPosWS += toCenter + toRadius + config.dirToRadius * positionWS.y;
+    return config;
+}
+
 void ApplySlope(inout float3 positionOS, inout float3 normalOS)
 {
     #if ANIMAL_CROSSING_SLOPE
     float3 posWS = mul(UNITY_MATRIX_M, float4(positionOS, 1)).xyz;
 
-    float3 projectedPosWS = float3(posWS.x, 0, posWS.z);
-    float3 toCenter = _SlopeParams.xyz - projectedPosWS;
-    toCenter.x = 0;
-    float3 dirToRadius = -normalize(toCenter);
-    float3 toRadius = dirToRadius * _SlopeParams.w;
+    SlopeConfig config = GetSlopeConfig(posWS);
+    positionOS = mul(UNITY_MATRIX_I_M, float4(config.slopedPosWS, 1)).xyz;
 
-    projectedPosWS += toCenter + toRadius + dirToRadius * posWS.y;
-    positionOS = mul(UNITY_MATRIX_I_M, float4(projectedPosWS, 1)).xyz;
-
-    float3x3 tbnFromInv = transpose(float3x3(float3(1, 0, 0), float3(0, 0, 1), float3(0, 1, 0)));
-    float3x3 tbnTo = float3x3(float3(1, 0, 0), cross(float3(1, 0, 0), dirToRadius), dirToRadius);
-    float3 normalWS = mul(UNITY_MATRIX_M, float4(normalOS, 0)).xyz;
-    float3 normalTBN = mul(tbnFromInv, float4(normalWS, 0)).xyz;
-    normalWS = mul(tbnTo, float4(normalTBN, 0)).xyz;
-    normalOS = mul(UNITY_MATRIX_I_M, float4(normalWS, 0)).xyz;
+    ApplySlopeToNormal(config.dirToRadius, normalOS);
     #endif
+}
+
+void ApplySlopeWaterNormal(float3 positionWS, inout float3 normalOS)
+{
+    //#if ANIMAL_CROSSING_SLOPE
+    SlopeConfig config = GetSlopeConfig(positionWS);
+    ApplySlopeToNormal(config.dirToRadius, normalOS);
+    //#endif
 }
 
 /// ---- ///
