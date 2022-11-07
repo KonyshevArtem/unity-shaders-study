@@ -49,10 +49,10 @@ void ApplySlope(inout float3 positionOS, inout float3 normalOS)
 
 void ApplySlopeWaterNormal(float3 positionWS, inout float3 normalOS)
 {
-    //#if ANIMAL_CROSSING_SLOPE
+    #if ANIMAL_CROSSING_SLOPE
     SlopeConfig config = GetSlopeConfig(positionWS);
     ApplySlopeToNormal(config.dirToRadius, normalOS);
-    //#endif
+    #endif
 }
 
 /// ---- ///

@@ -94,6 +94,8 @@ ENDHLSL
                 float3 flatPositionWS : TEXCOORD2;
                 float4 wavesUV: TEXCOORD1;
                 float2 uv : TEXCOORD0;
+
+                DECLARE_LIGHTMAP_OR_SH(staticLightmapUV, vertexSH, 4);
             };
 
             uniform float _UVOffset;
@@ -145,6 +147,8 @@ ENDHLSL
                 o.wavesUV = wavesUV;
                 o.uv = v.texcoord;
 
+                OUTPUT_SH(float3(0, 1, 0), o.vertexSH);
+
                 return o;
             }
 
@@ -154,6 +158,12 @@ ENDHLSL
                 inputData.normalWS = NormalizeNormalPerPixel(normalWS);
                 inputData.viewDirectionWS = GetWorldSpaceNormalizeViewDir(input.positionWS);
                 inputData.normalizedScreenSpaceUV = GetNormalizedScreenSpaceUV(input.positionCS);
+
+            #if defined(DYNAMICLIGHTMAP_ON)
+                inputData.bakedGI = SAMPLE_GI(input.staticLightmapUV, input.dynamicLightmapUV, input.vertexSH, inputData.normalWS);
+            #else
+                inputData.bakedGI = SAMPLE_GI(input.staticLightmapUV, input.vertexSH, inputData.normalWS);
+            #endif
             }
 
             half4 frag (Varyings i) : SV_Target
@@ -174,7 +184,6 @@ ENDHLSL
 
                 // water color
                 half4 color = lerp(_ShallowWaterColor, _DeepWaterColor, depthTerm);
-                half4 ambient = half4(unity_SHAr.w, unity_SHAg.w, unity_SHAb.w, 0);
 
                 // waves foam
                 float wavesFoamHeight = SAMPLE_TEXTURE2D_LOD(_SmallWavesNoise, sampler_SmallWavesNoise, i.wavesUV.zw, 0).r;
