@@ -3,6 +3,18 @@
 
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
+/// Visible Area UV ///
+
+uniform float4 _VisibleArea; // xy - posWS, zw - 1/size
+uniform float4 _VisibleAreaUV; // xy - offset, zw - scale
+
+float2 GetVisibleAreaUVs(float2 uv)
+{
+    return _VisibleAreaUV.xy + uv * _VisibleAreaUV.zw;    
+}
+
+/// --- ///
+
 /// Slope ///
 
 uniform float4 _SlopeParams; // xyz - center, w - radius
@@ -75,6 +87,7 @@ float SampleWaterCaustic(float3 posWS, float3 normalWS)
     #ifdef ANIMAL_CROSSING_WATER_CAUSTICS
     const float bias = 0.1;
 
+    posWS.xz = _VisibleArea.xy + posWS.xz / _VisibleArea.zw;
     float NdotUp = saturate(dot(normalWS, float3(0, 1, 0)));
     float3 causticUV = mul(_TopDownDepthVP, float4(posWS, 1)).xyz;
     float depth = causticUV.z * 0.5 + 0.5 - bias;
@@ -100,7 +113,6 @@ float SampleWaterCaustic(float3 posWS, float3 normalWS)
 
 #ifdef ANIMAL_CROSSING_RAIN_RIPPLES
 TEXTURE2D(_RippleNormalMap); SAMPLER(sampler_RippleNormalMap);
-uniform float4 _VisibleArea; // xy - posWS, zw - 1/size
 
 half4 packNormal(float2 normalXY)
 {

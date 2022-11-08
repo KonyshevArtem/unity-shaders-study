@@ -131,6 +131,7 @@ ENDHLSL
                 float3 flatPosWS = mul(UNITY_MATRIX_M, float4(v.positionOS.xyz, 1)).xyz;
                 float3 slopedPosWS = mul(UNITY_MATRIX_M, float4(slopedPositionOS, 1)).xyz;
 
+                v.texcoord = GetVisibleAreaUVs(v.texcoord);
                 float2 bigWavesUV = TRANSFORM_TEX(v.texcoord, _BigWavesNoise) + _Time.xx;
                 float2 smallWavesUV = TRANSFORM_TEX(v.texcoord, _SmallWavesNoise) + _Time.xx * _SmallWavesSpeed;
                 float4 wavesUV = float4(bigWavesUV, smallWavesUV);
@@ -236,6 +237,7 @@ ENDHLSL
 
                 float4 flatPosWS = mul(UNITY_MATRIX_M, float4(v.positionOS.xyz, 1));
 
+                v.texcoord = GetVisibleAreaUVs(v.texcoord);
                 float2 bigWavesUV = TRANSFORM_TEX(v.texcoord, _BigWavesNoise) + _Time.xx;
                 float2 smallWavesUV = TRANSFORM_TEX(v.texcoord, _SmallWavesNoise) + _Time.xx * _SmallWavesSpeed;
                 float4 wavesUV = float4(bigWavesUV, smallWavesUV);

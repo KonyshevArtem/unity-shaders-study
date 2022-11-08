@@ -9,6 +9,8 @@ public class AnimalCrossingWater : MonoBehaviour
     static readonly int WATER_CAUSTICS_MASK_ST_PROP_ID = Shader.PropertyToID("_WaterCausticMask_ST");
     static readonly int WATER_CAUSTICS_DISTORTION_PROP_ID = Shader.PropertyToID("_WaterCausticsDistortion");
     static readonly int WATER_CAUSTICS_DISTORTION_ST_PROP_ID = Shader.PropertyToID("_WaterCausticsDistortion_ST");
+    static readonly int VISIBLE_AREA_PROP_ID = Shader.PropertyToID("_VisibleArea");
+    static readonly int VISIBLE_AREA_UV_PROP_ID = Shader.PropertyToID("_VisibleAreaUV");
 
     [SerializeField] Camera m_Camera;
 
@@ -33,13 +35,10 @@ public class AnimalCrossingWater : MonoBehaviour
             return;
 
         Bounds bounds = m_Terrain.terrainData.bounds;
-        Vector3 min = bounds.min;
-        Vector3 max = bounds.max;
-
         Vector3 boundsCenterWS = m_Terrain.transform.localToWorldMatrix.MultiplyPoint(bounds.center);
         TerrainWorldBounds = new Bounds(boundsCenterWS, bounds.size);
 
-        Vector2 dist = new Vector2((max.x - min.x) / (m_SideVertexCount - 1), (max.z - min.z) / (m_SideVertexCount - 1));
+        float dist = 2.0f / (m_SideVertexCount - 1);
 
         Vector3[] verts = new Vector3[m_SideVertexCount * m_SideVertexCount];
         Vector2[] uvs = new Vector2[verts.Length];
@@ -48,7 +47,7 @@ public class AnimalCrossingWater : MonoBehaviour
             for (int j = 0; j < m_SideVertexCount; ++j)
             {
                 int index = j * m_SideVertexCount + i;
-                verts[index] = new Vector3(min.x + dist.x * i, 0, min.z + dist.y * j);
+                verts[index] = new Vector3(-1 + dist * i, 0, -1 + dist * j);
                 uvs[index] = new Vector2((float)i / (m_SideVertexCount - 1), (float)j / (m_SideVertexCount - 1));
             }
         }
@@ -94,16 +93,17 @@ public class AnimalCrossingWater : MonoBehaviour
     void Update()
     {
         Matrix4x4 projInv = m_Camera.projectionMatrix.inverse;
-        Matrix4x4 viewInv = m_Camera.transform.localToWorldMatrix;
-        Vector3 cameraPosWS = m_Camera.transform.position;
+        Transform camTransform = m_Camera.transform;
+        Matrix4x4 viewInv = camTransform.localToWorldMatrix;
+        Vector3 cameraPosWS = camTransform.position;
 
         Vector4[] cornersWS = new[]
         {
-                new Vector4(1, 1, 1, 1),
-                new Vector4(-1, 1, 1, 1),
-                new Vector4(-1, -1, 1, 1),
-                new Vector4(1, -1, 1, 1)
-            };
+            new Vector4(1, 1, 1, 1),
+            new Vector4(-1, 1, 1, 1),
+            new Vector4(-1, -1, 1, 1),
+            new Vector4(1, -1, 1, 1)
+        };
 
         Vector2 min = new Vector2(float.MaxValue, float.MaxValue);
         Vector2 max = new Vector4(float.MinValue, float.MinValue);
@@ -134,7 +134,26 @@ public class AnimalCrossingWater : MonoBehaviour
         LastFrameVisibleArea = VisibleArea;
         VisibleArea = new Vector4(min.x, min.y, 1.0f / size.x, 1.0f / size.y);
 
-        Shader.SetGlobalVector("_VisibleArea", VisibleArea);
+        Shader.SetGlobalVector(VISIBLE_AREA_PROP_ID, VisibleArea);
+
+        Vector3 worldBoundsMin = TerrainWorldBounds.min;
+        Vector3 worldBoundsMax = TerrainWorldBounds.max;
+        min = new Vector2(
+            (min.x - worldBoundsMin.x) / (worldBoundsMax.x - worldBoundsMin.x),
+            (min.y - worldBoundsMin.z) / (worldBoundsMax.z - worldBoundsMin.z)
+        );
+        size /= new Vector2(TerrainWorldBounds.size.x, TerrainWorldBounds.size.z);
+
+        Shader.SetGlobalVector(VISIBLE_AREA_UV_PROP_ID, new Vector4(min.x, min.y, size.x, size.y));
+
+        UpdateWaterTransform();
+    }
+
+    void UpdateWaterTransform()
+    {
+        float scale = Mathf.Max(1 / VisibleArea.z * 0.5f, 1 / VisibleArea.w * 0.5f);
+        transform.position = new Vector3(VisibleArea.x + scale, transform.position.y, VisibleArea.y + scale);
+        transform.localScale = new Vector3(scale, scale, scale);
     }
 
     void OnDestroy()

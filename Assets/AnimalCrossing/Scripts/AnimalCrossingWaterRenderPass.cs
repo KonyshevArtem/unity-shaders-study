@@ -17,7 +17,7 @@ public class AnimalCrossingWaterRenderPass : ScriptableRenderPass
     public AnimalCrossingWaterRenderPass()
     {
         m_Sampler = new ProfilingSampler(PROFILER_TAG);
-        renderPassEvent = RenderPassEvent.AfterRenderingOpaques;
+        renderPassEvent = RenderPassEvent.AfterRenderingSkybox;
 
         m_CameraColorCopyHandle.Init(CAMERA_COLOR_COPY);
         m_CameraColorCopyIdentifier = new RenderTargetIdentifier(m_CameraColorCopyHandle.id);

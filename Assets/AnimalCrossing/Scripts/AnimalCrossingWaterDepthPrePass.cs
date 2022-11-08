@@ -48,8 +48,8 @@ public class AnimalCrossingWaterDepthPrePass : ScriptableRenderPass
     {
         base.Configure(cmd, cameraTextureDescriptor);
 
-        cmd.GetTemporaryRT(m_DepthMapHandle.id, 2048, 2048, 32, FilterMode.Bilinear, RenderTextureFormat.Depth);
-        cmd.GetTemporaryRT(m_WaterDepthHandle.id, 2048, 2048, 32, FilterMode.Bilinear, RenderTextureFormat.Depth);
+        cmd.GetTemporaryRT(m_DepthMapHandle.id, 1024, 1024, 32, FilterMode.Bilinear, RenderTextureFormat.Depth);
+        cmd.GetTemporaryRT(m_WaterDepthHandle.id, 1024, 1024, 32, FilterMode.Bilinear, RenderTextureFormat.Depth);
 
         cmd.SetRenderTarget(m_DepthMapIdentifier);
     }
@@ -62,11 +62,12 @@ public class AnimalCrossingWaterDepthPrePass : ScriptableRenderPass
             context.ExecuteCommandBuffer(cmd);
             cmd.Clear();
 
-            Vector3 center = m_Water.TerrainWorldBounds.center;
-            Vector3 extents = m_Water.TerrainWorldBounds.extents;
+            Vector4 visibleArea = AnimalCrossingWater.VisibleArea;
+            Vector3 extents = new Vector3(1.0f / visibleArea.z * 0.5f, m_Water.TerrainWorldBounds.extents.y, 1.0f / visibleArea.w * 0.5f);
+            Vector3 center = new Vector3(visibleArea.x + extents.x, m_Water.TerrainWorldBounds.max.y + 0.1f, visibleArea.y + extents.z);
 
             Matrix4x4 view = Matrix4x4.TRS(
-                new Vector3(center.x, m_Water.TerrainWorldBounds.max.y + 0.1f, center.z),
+                center,
                 Quaternion.LookRotation(Vector3.down, Vector3.forward),
                 new Vector3(1, 1, -1)).inverse;
 
