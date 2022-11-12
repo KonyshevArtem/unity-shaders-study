@@ -137,6 +137,8 @@ Material:
     - _SrcBlend: 1
     - _Surface: 0
     - _UnderwaterDistortionStrength: 0.1
+    - _WaterColorMaxDepth: 0.025
+    - _WaterDepthColorTransitionStrength: 0.6
     - _WorkflowMode: 1
     - _ZWrite: 1
     m_Colors:

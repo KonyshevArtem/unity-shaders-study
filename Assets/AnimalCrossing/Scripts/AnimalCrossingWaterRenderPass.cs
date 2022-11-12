@@ -8,6 +8,9 @@ public class AnimalCrossingWaterRenderPass : ScriptableRenderPass
     const string CAMERA_COLOR_COPY = "_CameraColorCopy";
     static readonly int CAMERA_COLOR_COPY_PROP_ID = Shader.PropertyToID(CAMERA_COLOR_COPY);
 
+    private static readonly RenderTargetIdentifier CAMERA_TARGET =
+        new RenderTargetIdentifier(BuiltinRenderTextureType.CameraTarget);
+    
     readonly ProfilingSampler m_Sampler;
     readonly RenderTargetHandle m_CameraColorCopyHandle;
     readonly RenderTargetIdentifier m_CameraColorCopyIdentifier;
@@ -22,7 +25,7 @@ public class AnimalCrossingWaterRenderPass : ScriptableRenderPass
         m_CameraColorCopyHandle.Init(CAMERA_COLOR_COPY);
         m_CameraColorCopyIdentifier = new RenderTargetIdentifier(m_CameraColorCopyHandle.id);
 
-        ConfigureInput(ScriptableRenderPassInput.Color);
+        ConfigureInput(ScriptableRenderPassInput.Color | ScriptableRenderPassInput.Depth);
     }
 
     public void Setup(AnimalCrossingWater _Water)
@@ -51,7 +54,11 @@ public class AnimalCrossingWaterRenderPass : ScriptableRenderPass
 
             // draw water
             {
-                cmd.SetRenderTarget(renderingData.cameraData.renderer.cameraColorTarget);
+                if (renderingData.cameraData.renderer.cameraDepthTarget == CAMERA_TARGET)
+                    cmd.SetRenderTarget(renderingData.cameraData.renderer.cameraColorTarget);
+                else
+                    cmd.SetRenderTarget(renderingData.cameraData.renderer.cameraColorTarget, renderingData.cameraData.renderer.cameraDepthTarget);
+
                 cmd.SetGlobalTexture(CAMERA_COLOR_COPY_PROP_ID, m_CameraColorCopyIdentifier);
                 cmd.DrawRenderer(m_Water.Renderer, m_Water.Renderer.sharedMaterial, 0, 0);
                 context.ExecuteCommandBuffer(cmd);
