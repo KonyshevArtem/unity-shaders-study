@@ -15,6 +15,19 @@ MonoBehaviour:
   m_Active: 1
   m_RippleShader: {fileID: 4800000, guid: 3e7442c8d4d224dcfb6b5a6571c2cdbc, type: 3}
   m_RippleNormal: {fileID: 2800000, guid: 1420a3626f7c04261bf4f4a108dec342, type: 3}
+--- !u!114 &-3278099186916410567
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6e4aef9a0321146c98ba691932b186b1, type: 3}
+  m_Name: BackfaceOutlineRenderFeature
+  m_EditorClassIdentifier: 
+  m_Active: 1
 --- !u!114 &-987739235032910552
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -51,7 +64,8 @@ MonoBehaviour:
   m_RendererFeatures:
   - {fileID: -987739235032910552}
   - {fileID: -6672617700308535124}
-  m_RendererFeatureMap: 28b5252566d84af2ac3820fb8d1966a3
+  - {fileID: -3278099186916410567}
+  m_RendererFeatureMap: 28b5252566d84af2ac3820fb8d1966a339bb595928da81d2
   m_UseNativeRenderPass: 0
   postProcessData: {fileID: 0}
   xrSystemData: {fileID: 11400000, guid: 60e1133243b97e347b653163a8c01b64, type: 2}
