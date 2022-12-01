@@ -1,5 +1,5 @@
-#ifndef OUTLINE_PASS_HLSL
-#define OUTLINE_PASS_HLSL
+#ifndef BACKFACE_OUTLINE_PASS_HLSL
+#define BACKFACE_OUTLINE_PASS_HLSL
 
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
@@ -20,7 +20,7 @@ struct Varyings
 Varyings vert(Attributes i)
 {
     Varyings output;
-    float3 posWS = mul(UNITY_MATRIX_M, float4(i.positionOS, 1));
+    float3 posWS = mul(UNITY_MATRIX_M, float4(i.positionOS.xyz, 1)).xyz;
     float3 normalWS = normalize(mul(i.normalOS, (float3x3) UNITY_MATRIX_M));
     posWS += normalWS * _OutlineStrength;
     

@@ -15,6 +15,20 @@ MonoBehaviour:
   m_Active: 1
   m_RippleShader: {fileID: 4800000, guid: 3e7442c8d4d224dcfb6b5a6571c2cdbc, type: 3}
   m_RippleNormal: {fileID: 2800000, guid: 1420a3626f7c04261bf4f4a108dec342, type: 3}
+--- !u!114 &-5719578059147933161
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f5bc3e91fda7741749abf79470496985, type: 3}
+  m_Name: DepthNormalOutlineRenderFeature
+  m_EditorClassIdentifier: 
+  m_Active: 1
+  m_OutlineShader: {fileID: 4800000, guid: 5e41c3892baa14dd2bc8e01c6f3a6633, type: 3}
 --- !u!114 &-3278099186916410567
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -65,7 +79,8 @@ MonoBehaviour:
   - {fileID: -987739235032910552}
   - {fileID: -6672617700308535124}
   - {fileID: -3278099186916410567}
-  m_RendererFeatureMap: 28b5252566d84af2ac3820fb8d1966a339bb595928da81d2
+  - {fileID: -5719578059147933161}
+  m_RendererFeatureMap: 28b5252566d84af2ac3820fb8d1966a339bb595928da81d2178a5e0f0ffa9fb0
   m_UseNativeRenderPass: 0
   postProcessData: {fileID: 0}
   xrSystemData: {fileID: 11400000, guid: 60e1133243b97e347b653163a8c01b64, type: 2}

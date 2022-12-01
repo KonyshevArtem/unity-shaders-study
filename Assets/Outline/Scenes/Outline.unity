@@ -807,7 +807,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_OutlineStrength: 0.02
-  m_OutlineColor: {r: 0, g: 0, b: 0, a: 0}
+  m_OutlineColor: {r: 1, g: 1, b: 1, a: 0}
+  m_NormalMultiplier: 0.5
+  m_NormalBias: 20
+  m_DepthMultiplier: 1
+  m_DepthBias: 1
 --- !u!4 &962346444
 Transform:
   m_ObjectHideFlags: 0

@@ -1,4 +1,4 @@
-Shader "Custom/Lit Outlined"
+Shader "Custom/Outline/Lit Outlined"
 {
     Properties
     {
@@ -74,7 +74,10 @@ Shader "Custom/Lit Outlined"
         // Universal Pipeline tag is required. If Universal render pipeline is not set in the graphics settings
         // this Subshader will fail. One can add a subshader below or fallback to Standard built-in to make this
         // material work with both Universal Render Pipeline and Builtin Unity Pipeline
-        Tags{"RenderType" = "Opaque" "RenderPipeline" = "UniversalPipeline" "UniversalMaterialType" = "Lit" "IgnoreProjector" = "True" "ShaderModel"="4.5"}
+        Tags
+        {
+            "RenderType" = "Opaque" "RenderPipeline" = "UniversalPipeline" "UniversalMaterialType" = "Lit" "IgnoreProjector" = "True" "ShaderModel"="4.5"
+        }
         LOD 300
 
         // ------------------------------------------------------------------
@@ -84,7 +87,10 @@ Shader "Custom/Lit Outlined"
             // Lightmode matches the ShaderPassName set in UniversalRenderPipeline.cs. SRPDefaultUnlit and passes with
             // no LightMode tag are also rendered by Universal Render Pipeline
             Name "ForwardLit"
-            Tags{"LightMode" = "UniversalForward"}
+            Tags
+            {
+                "LightMode" = "UniversalForward"
+            }
 
             Blend[_SrcBlend][_DstBlend]
             ZWrite[_ZWrite]
@@ -148,19 +154,59 @@ Shader "Custom/Lit Outlined"
             #include "Packages/com.unity.render-pipelines.universal/Shaders/LitForwardPass.hlsl"
             ENDHLSL
         }
-        
+
         Pass
         {
             Name "BackfaceOutline"
-            Tags{"LightMode" = "BackfaceOutline"}
+            Tags
+            {
+                "LightMode" = "BackfaceOutline"
+            }
 
             Cull Front
 
             HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag
-            
-            #include "Assets/Outline/Shaders/OutlinePass.hlsl"
+
+            #include "Assets/Outline/Shaders/BackfaceOutlinePass.hlsl"
+            ENDHLSL
+        }
+
+        // This pass is used when drawing to a _CameraNormalsTexture texture
+        Pass
+        {
+            Name "DepthNormals"
+            Tags
+            {
+                "LightMode" = "DepthNormals"
+            }
+
+            ZWrite On
+            Cull[_Cull]
+
+            HLSLPROGRAM
+            #pragma exclude_renderers gles gles3 glcore
+            #pragma target 4.5
+
+            #pragma vertex DepthNormalsVertex
+            #pragma fragment DepthNormalsFragment
+
+            // -------------------------------------
+            // Material Keywords
+            #pragma shader_feature_local _NORMALMAP
+            #pragma shader_feature_local _PARALLAXMAP
+            #pragma shader_feature_local _ _DETAIL_MULX2 _DETAIL_SCALED
+            #pragma shader_feature_local_fragment _ALPHATEST_ON
+            #pragma shader_feature_local_fragment _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
+
+            //--------------------------------------
+            // GPU Instancing
+            #pragma multi_compile_instancing
+            #pragma multi_compile _ DOTS_INSTANCING_ON
+
+            #include "Packages/com.unity.render-pipelines.universal/Shaders/LitInput.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/Shaders/LitDepthNormalsPass.hlsl"
             ENDHLSL
         }
     }
