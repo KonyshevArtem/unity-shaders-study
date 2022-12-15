@@ -1,5 +1,19 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-7944623116575308618
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0dc6cbf428d544c9890491b2bc8da8b0, type: 3}
+  m_Name: PsOneRenderFeature
+  m_EditorClassIdentifier: 
+  m_Active: 1
+  m_PsOneUtilShader: {fileID: 4800000, guid: 4a517c11bc8c54c3f985dac1e6df9d5c, type: 3}
 --- !u!114 &-6672617700308535124
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -80,7 +94,8 @@ MonoBehaviour:
   - {fileID: -6672617700308535124}
   - {fileID: -3278099186916410567}
   - {fileID: -5719578059147933161}
-  m_RendererFeatureMap: 28b5252566d84af2ac3820fb8d1966a339bb595928da81d2178a5e0f0ffa9fb0
+  - {fileID: -7944623116575308618}
+  m_RendererFeatureMap: 28b5252566d84af2ac3820fb8d1966a339bb595928da81d2178a5e0f0ffa9fb0b6042c2e5e07bf91
   m_UseNativeRenderPass: 0
   postProcessData: {fileID: 0}
   xrSystemData: {fileID: 11400000, guid: 60e1133243b97e347b653163a8c01b64, type: 2}
