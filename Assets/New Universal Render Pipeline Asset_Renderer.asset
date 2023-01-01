@@ -74,6 +74,20 @@ MonoBehaviour:
   m_BoxBlurShader: {fileID: 4800000, guid: 3cf7431086671460596025317373cc3a, type: 3}
   m_ChromaticAbberationShader: {fileID: 4800000, guid: d747599e805c34e3dab572b754222256,
     type: 3}
+--- !u!114 &-620731632772681343
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0f91c955de1514df98a7dee784c68505, type: 3}
+  m_Name: AlphaClippingRenderFeature
+  m_EditorClassIdentifier: 
+  m_Active: 1
+  m_DebugMask: 0
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -95,7 +109,8 @@ MonoBehaviour:
   - {fileID: -3278099186916410567}
   - {fileID: -5719578059147933161}
   - {fileID: -7944623116575308618}
-  m_RendererFeatureMap: 28b5252566d84af2ac3820fb8d1966a339bb595928da81d2178a5e0f0ffa9fb0b6042c2e5e07bf91
+  - {fileID: -620731632772681343}
+  m_RendererFeatureMap: 28b5252566d84af2ac3820fb8d1966a339bb595928da81d2178a5e0f0ffa9fb0b6042c2e5e07bf918171bc67deb762f7
   m_UseNativeRenderPass: 0
   postProcessData: {fileID: 0}
   xrSystemData: {fileID: 11400000, guid: 60e1133243b97e347b653163a8c01b64, type: 2}
