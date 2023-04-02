@@ -56,6 +56,21 @@ MonoBehaviour:
   m_Name: BackfaceOutlineRenderFeature
   m_EditorClassIdentifier: 
   m_Active: 1
+--- !u!114 &-2887012102285263456
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a4a21d468144b40b490beb6fa3f4dc18, type: 3}
+  m_Name: PathTracingRenderFeature
+  m_EditorClassIdentifier: 
+  m_Active: 1
+  m_Shader: {fileID: 4800000, guid: ab7f216e02693453783c8089b1d21300, type: 3}
+  m_Skybox: {fileID: 8900000, guid: 5a80706490c0b9e458216d2d0bb6c8f5, type: 3}
 --- !u!114 &-987739235032910552
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -110,7 +125,8 @@ MonoBehaviour:
   - {fileID: -5719578059147933161}
   - {fileID: -7944623116575308618}
   - {fileID: -620731632772681343}
-  m_RendererFeatureMap: 28b5252566d84af2ac3820fb8d1966a339bb595928da81d2178a5e0f0ffa9fb0b6042c2e5e07bf918171bc67deb762f7
+  - {fileID: -2887012102285263456}
+  m_RendererFeatureMap: 28b5252566d84af2ac3820fb8d1966a339bb595928da81d2178a5e0f0ffa9fb0b6042c2e5e07bf918171bc67deb762f7a07d08fdc945efd7
   m_UseNativeRenderPass: 0
   postProcessData: {fileID: 0}
   xrSystemData: {fileID: 11400000, guid: 60e1133243b97e347b653163a8c01b64, type: 2}
