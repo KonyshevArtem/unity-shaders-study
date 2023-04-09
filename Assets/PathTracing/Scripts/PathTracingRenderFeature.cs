@@ -1,28 +1,44 @@
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
 public class PathTracingRenderFeature : ScriptableRendererFeature
 {
-    [SerializeField] private Shader m_Shader;
+    [SerializeField] private Shader m_PathTracingShader;
+    [SerializeField] private Shader m_BlendShader;
+    [SerializeField] private Cubemap m_Skybox;
+    [SerializeField] private float m_SkyboxRotationY;
+    [SerializeField, Range(0, 1)] private float m_LastFrameBlendWeight;
+    [SerializeField] private uint m_MaxBounces;
+    [SerializeField] private uint m_MaxIterations;
 
+    private Material m_PathTracingMaterial;
+    private Material m_BlendMaterial;
     private PathTracingRenderPass m_Pass;
-    private PathTracingController m_Controller;
 
     public override void Create()
     {
-        m_Controller = FindObjectOfType<PathTracingController>();
+        m_PathTracingMaterial = CoreUtils.CreateEngineMaterial(m_PathTracingShader);
+        m_BlendMaterial = CoreUtils.CreateEngineMaterial(m_BlendShader);
         
-        if (m_Controller != null)
-        {
-            m_Pass = new PathTracingRenderPass(m_Shader, m_Controller);
-        }
+        m_Pass = new PathTracingRenderPass(m_PathTracingMaterial, m_BlendMaterial, m_Skybox);
     }
 
     public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
     {
-        if (renderingData.cameraData.cameraType == CameraType.Game && m_Controller != null)
+        PathTracingObject[] objects = FindObjectsOfType<PathTracingObject>();
+        if (renderingData.cameraData.cameraType == CameraType.Game && objects.Length > 0)
         {
+            m_Pass.Setup(objects, m_LastFrameBlendWeight, m_MaxBounces, m_MaxIterations, m_SkyboxRotationY);
             renderer.EnqueuePass(m_Pass);
         }
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+
+        CoreUtils.Destroy(m_PathTracingMaterial);
+        CoreUtils.Destroy(m_BlendMaterial);
     }
 }

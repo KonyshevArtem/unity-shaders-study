@@ -1,8 +1,6 @@
 #ifndef PATH_TRACING_HLSL
 #define PATH_TRACING_HLSL
 
-#define MAX_DEPTH 3
-
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
 struct Attributes
@@ -21,16 +19,22 @@ struct Object
     float4 posWS;
     float4 color;
     float smoothness;
+    float emission;
 };
 
-struct HitInfo
+struct Hit
 {
-    float4 positionSmoothness;
-    half4 colorAttenuation;
+    int ObjectIndex;
+    float3 Position;
+    float3 Normal;
 };
 
 uniform StructuredBuffer<Object> _Objects;
 uniform uint _ObjectsCount;
+
+uniform uint _MaxBounces;
+uniform uint _MaxIterations;
+uniform float2 _SkyboxRotationSinCos;
 
 TEXTURECUBE(_Skybox);
 SAMPLER(sampler_Skybox);
@@ -48,12 +52,10 @@ Varyings vert(Attributes input)
 
 bool SphereIntersection(float3 pos, float3 dir, float4 sphere, out float3 position, out float distance)
 {
-    position = (float3)0;
-    distance = 0;
-
     float3 sphereToCam = sphere.xyz - pos;
     float dirDotVector = dot(dir, sphereToCam);
-    float det = dirDotVector * dirDotVector - (dot(sphereToCam, sphereToCam) - sphere.w * sphere.w);
+    float radius = sphere.w * 0.5f;
+    float det = dirDotVector * dirDotVector - (dot(sphereToCam, sphereToCam) - radius * radius);
     if (det < 0)
     {
         return false;
@@ -72,72 +74,96 @@ bool SphereIntersection(float3 pos, float3 dir, float4 sphere, out float3 positi
 
 half4 SampleSkybox(float3 dir)
 {
+    float2x2 rotMatrix = float2x2(_SkyboxRotationSinCos.y, _SkyboxRotationSinCos.x, -_SkyboxRotationSinCos.x, _SkyboxRotationSinCos.y);
+    dir = float3(mul(rotMatrix, dir.xz).xy, dir.y).xzy;
     return SAMPLE_TEXTURECUBE_LOD(_Skybox, sampler_Skybox, dir, 0);
 }
 
-half4 TraceRay(float3 rayStartPoint, float3 rayDir, int currentDepth)
+float Random(half2 st)
 {
-    HitInfo hits[MAX_DEPTH];
+    return frac(sin(dot(st.xy, half2(12.9898, 78.233))) * 43758.5453123) * 2 - 1;
+}
 
-    for (uint i = 0; i < MAX_DEPTH; i++)
+bool GetClosestObjectHit(float3 rayStartPoint, float3 rayDir, out Hit hit)
+{
+    hit.ObjectIndex = -1;
+    hit.Position = 0;
+
+    float closestObjectDistance = 0;
+    for (uint j = 0; j < _ObjectsCount; j++)
     {
-        int closestObject = -1;
-        float3 closestObjectPos = 0;
-        float closestObjectDistance = 0;
-        for (uint j = 0; j < _ObjectsCount; j++)
-        {
-            Object object = _Objects[j];
+        Object object = _Objects[j];
 
-            float3 position;
-            float distance;
-            if (SphereIntersection(rayStartPoint, rayDir, object.posWS, position, distance))
+        float3 position;
+        float distance;
+        if (SphereIntersection(rayStartPoint, rayDir, object.posWS, position, distance))
+        {
+            if (hit.ObjectIndex < 0 || distance < closestObjectDistance)
             {
-                if (closestObject < 0 || distance < closestObjectDistance)
-                {
-                    closestObject = j;
-                    closestObjectPos = position;
-                    closestObjectDistance = distance;
-                }
+                hit.ObjectIndex = j;
+                hit.Position = position;
+                closestObjectDistance = distance;
             }
         }
+    }
+    
+    if (hit.ObjectIndex >= 0)
+    {
+        hit.Normal = normalize(hit.Position - _Objects[hit.ObjectIndex].posWS);
+        return true;
+    }
 
-        if (closestObject >= 0)
+    return false; 
+}
+
+float3 Trace(float3 rayStartPoint, float3 rayDir, float2 randomSeed)
+{
+    half3 color = 1;
+    float3 light = 0;
+
+    Hit hit;
+    for (uint i = 0; i < _MaxBounces + 1; i++)
+    {
+        if (GetClosestObjectHit(rayStartPoint, rayDir, hit))
         {
-            Object object = _Objects[closestObject];
+            Object object = _Objects[hit.ObjectIndex];
 
-            float3 normal = normalize(closestObjectPos - object.posWS.xyz);
-            float attenuation = saturate(dot(_MainLightPosition.xyz, normal));
+            float x = Random(randomSeed + i);
+            float y = Random(randomSeed + x * 35674 + i);
+            float z = Random(randomSeed + y * 224546 + i);
+            float3 diffuseDir = normalize(float3(x, y, z));
+            diffuseDir *= dot(diffuseDir, hit.Normal) < 0 ? -1 : 1;
 
-            hits[i].positionSmoothness = float4(closestObjectPos, object.smoothness);
-            hits[i].colorAttenuation = half4(object.color.rgb, attenuation);
+            rayDir = lerp(diffuseDir, reflect(rayDir, hit.Normal), object.smoothness);
+            rayStartPoint = hit.Position;
 
-            rayStartPoint = closestObjectPos;
-            rayDir = reflect(rayDir, normal);
+            light += object.emission * color * dot(hit.Normal, rayDir);
+            color *= object.color;
         }
         else
         {
-            hits[i].positionSmoothness = 0;
-            hits[i].colorAttenuation = half4(SampleSkybox(rayDir).rgb, 1);
+            light += SampleSkybox(rayDir).rgb * color;
             break;
         }
     }
 
-    half3 finalColor = 0;
-    for (int i = MAX_DEPTH - 1; i >= 0; i--)
-    {
-        float smoothness = hits[i].positionSmoothness.a;
-        half4 hitColorAttenuation = hits[i].colorAttenuation;
-        finalColor = lerp(finalColor, hitColorAttenuation.rgb, 1 - smoothness) * hitColorAttenuation.a;
-    }
-
-    return half4(finalColor, 1);
+    return light;
 }
 
 half4 frag(Varyings input) : SV_Target
 {
-    float3 viewDir = -normalize(input.viewDir);
+    float3 rayStartPoint = _WorldSpaceCameraPos;
+    float3 rayDir = -normalize(input.viewDir);
+    float2 randomSeed = input.positionCS + _Time.xx;
 
-    return TraceRay(_WorldSpaceCameraPos, viewDir, 1);
+    float3 light = 0;
+    for (uint i = 0; i < _MaxIterations + 1; ++i)
+    {
+        light += Trace(rayStartPoint, rayDir, randomSeed * (i + 1));
+    }
+    light /= _MaxIterations;
+
+    return half4(light, 1);
 }
 
 #endif

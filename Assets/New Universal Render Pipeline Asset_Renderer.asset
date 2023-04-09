@@ -69,8 +69,13 @@ MonoBehaviour:
   m_Name: PathTracingRenderFeature
   m_EditorClassIdentifier: 
   m_Active: 1
-  m_Shader: {fileID: 4800000, guid: ab7f216e02693453783c8089b1d21300, type: 3}
+  m_PathTracingShader: {fileID: 4800000, guid: ab7f216e02693453783c8089b1d21300, type: 3}
+  m_BlendShader: {fileID: 4800000, guid: 1d5f82ba080c249b78544f0e958a1507, type: 3}
   m_Skybox: {fileID: 8900000, guid: 5a80706490c0b9e458216d2d0bb6c8f5, type: 3}
+  m_SkyboxRotationY: 0
+  m_LastFrameBlendWeight: 0.936
+  m_MaxBounces: 10
+  m_MaxIterations: 100
 --- !u!114 &-987739235032910552
 MonoBehaviour:
   m_ObjectHideFlags: 0
