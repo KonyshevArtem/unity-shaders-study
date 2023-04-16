@@ -73,9 +73,9 @@ MonoBehaviour:
   m_BlendShader: {fileID: 4800000, guid: 1d5f82ba080c249b78544f0e958a1507, type: 3}
   m_Skybox: {fileID: 8900000, guid: 5a80706490c0b9e458216d2d0bb6c8f5, type: 3}
   m_SkyboxRotationY: 0
-  m_LastFrameBlendWeight: 0.936
   m_MaxBounces: 10
-  m_MaxIterations: 100
+  m_MaxIterations: 10
+  m_EnableInSceneView: 0
 --- !u!114 &-987739235032910552
 MonoBehaviour:
   m_ObjectHideFlags: 0

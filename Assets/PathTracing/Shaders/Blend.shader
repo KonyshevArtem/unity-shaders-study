@@ -20,12 +20,12 @@ Shader "Custom/Path Tracing/Path Tracing"
 
             TEXTURE2D(_MainTex); SAMPLER(sampler_MainTex);
 
-            uniform float _LastFrameBlendWeight;
+            uniform float _FrameCount;
 
             half4 frag(Varyings input) : SV_Target
             {
                 half3 c = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, input.uv).rgb;
-                return half4(c, 1 - _LastFrameBlendWeight);
+                return half4(c, 1 / max(_FrameCount, 1));
             }
             ENDHLSL
         }

@@ -8,9 +8,9 @@ public class PathTracingRenderFeature : ScriptableRendererFeature
     [SerializeField] private Shader m_BlendShader;
     [SerializeField] private Cubemap m_Skybox;
     [SerializeField] private float m_SkyboxRotationY;
-    [SerializeField, Range(0, 1)] private float m_LastFrameBlendWeight;
     [SerializeField] private uint m_MaxBounces;
     [SerializeField] private uint m_MaxIterations;
+    [SerializeField] private bool m_EnableInSceneView;
 
     private Material m_PathTracingMaterial;
     private Material m_BlendMaterial;
@@ -27,9 +27,9 @@ public class PathTracingRenderFeature : ScriptableRendererFeature
     public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
     {
         PathTracingObject[] objects = FindObjectsOfType<PathTracingObject>();
-        if (renderingData.cameraData.cameraType == CameraType.Game && objects.Length > 0)
+        if ((renderingData.cameraData.cameraType == CameraType.Game || renderingData.cameraData.cameraType == CameraType.SceneView && m_EnableInSceneView) && objects.Length > 0)
         {
-            m_Pass.Setup(objects, m_LastFrameBlendWeight, m_MaxBounces, m_MaxIterations, m_SkyboxRotationY);
+            m_Pass.Setup(objects, m_MaxBounces, m_MaxIterations, m_SkyboxRotationY);
             renderer.EnqueuePass(m_Pass);
         }
     }
@@ -38,6 +38,8 @@ public class PathTracingRenderFeature : ScriptableRendererFeature
     {
         base.Dispose(disposing);
 
+        m_Pass?.Dispose();
+        
         CoreUtils.Destroy(m_PathTracingMaterial);
         CoreUtils.Destroy(m_BlendMaterial);
     }
