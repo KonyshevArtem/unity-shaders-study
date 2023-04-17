@@ -19,6 +19,8 @@ Shader "Custom/Path Tracing/Path Tracing"
             HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag
+            #pragma multi_compile _ _MATRICES_PRE_APPLIED
+            #pragma multi_compile _ _NO_INDICES
 
             #include "PathTracing.hlsl"
             ENDHLSL

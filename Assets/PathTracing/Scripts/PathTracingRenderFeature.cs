@@ -11,6 +11,9 @@ public class PathTracingRenderFeature : ScriptableRendererFeature
     [SerializeField] private uint m_MaxBounces;
     [SerializeField] private uint m_MaxIterations;
     [SerializeField] private bool m_EnableInSceneView;
+    [Space]
+    [SerializeField] private bool m_PreApplyModelMatrix;
+    [SerializeField] private bool m_NoIndices;
 
     private Material m_PathTracingMaterial;
     private Material m_BlendMaterial;
@@ -29,7 +32,7 @@ public class PathTracingRenderFeature : ScriptableRendererFeature
         PathTracingObject[] objects = FindObjectsOfType<PathTracingObject>();
         if ((renderingData.cameraData.cameraType == CameraType.Game || renderingData.cameraData.cameraType == CameraType.SceneView && m_EnableInSceneView) && objects.Length > 0)
         {
-            m_Pass.Setup(objects, m_MaxBounces, m_MaxIterations, m_SkyboxRotationY);
+            m_Pass.Setup(objects, m_MaxBounces, m_MaxIterations, m_SkyboxRotationY, m_PreApplyModelMatrix, m_NoIndices);
             renderer.EnqueuePass(m_Pass);
         }
     }

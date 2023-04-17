@@ -76,6 +76,8 @@ MonoBehaviour:
   m_MaxBounces: 10
   m_MaxIterations: 10
   m_EnableInSceneView: 0
+  m_PreApplyModelMatrix: 1
+  m_NoIndices: 1
 --- !u!114 &-987739235032910552
 MonoBehaviour:
   m_ObjectHideFlags: 0

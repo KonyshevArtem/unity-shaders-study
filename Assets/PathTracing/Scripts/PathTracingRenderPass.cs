@@ -11,14 +11,25 @@ public unsafe class PathTracingRenderPass : ScriptableRenderPass
 {
     private static readonly int SKYBOX_PROP_ID = Shader.PropertyToID("_Skybox");
 
-    private struct Object
+    private struct MaterialParameters
     {
-        [UsedImplicitly] public float4 Position;
         [UsedImplicitly] public float4 Color;
         [UsedImplicitly] public float2 SmoothnessEmission;
-        [UsedImplicitly] public uint2 TrianglesOffsetCount;
-        [UsedImplicitly] public float IsMesh;
+    }
+
+    private struct Sphere
+    {
+        [UsedImplicitly] public float4 PositionRadius;
+        [UsedImplicitly] public MaterialParameters Material;
+    }
+
+    private struct TriangleMesh
+    {
         [UsedImplicitly] public float4x4 ModelMatrix;
+        [UsedImplicitly] public MaterialParameters Material;
+        [UsedImplicitly] public uint2 TrianglesOffsetCount;
+        [UsedImplicitly] public float3 Min;
+        [UsedImplicitly] public float3 Max;
     }
 
     private readonly Material m_PathTracingMaterial;
@@ -27,12 +38,15 @@ public unsafe class PathTracingRenderPass : ScriptableRenderPass
     private readonly Cubemap m_Skybox;
 
     private Mesh m_FullScreenMesh;
-    private ComputeBuffer m_ObjectsBuffer;
+    private ComputeBuffer m_SpheresBuffer;
+    private ComputeBuffer m_TriangleMeshesBuffer;
     private ComputeBuffer m_VerticesBuffer;
     private ComputeBuffer m_IndicesBuffer;
     private PathTracingObject[] m_SceneObjects;
     private uint m_MaxBounces;
     private uint m_MaxIterations;
+    private bool m_PreApplyModelMatrix;
+    private bool m_NoIndices;
     private Vector2 m_SkyboxRotationSinCos;
 
     private RenderTargetHandle m_CurrentFrameHandle;
@@ -54,11 +68,13 @@ public unsafe class PathTracingRenderPass : ScriptableRenderPass
         renderPassEvent = RenderPassEvent.AfterRendering;
     }
 
-    public void Setup(PathTracingObject[] objects, uint maxBounces, uint maxIterations, float skyboxRotationY)
+    public void Setup(PathTracingObject[] objects, uint maxBounces, uint maxIterations, float skyboxRotationY, bool preApplyModelMatrix, bool noIndices)
     {
         m_SceneObjects = objects;
         m_MaxBounces = maxBounces;
         m_MaxIterations = maxIterations;
+        m_PreApplyModelMatrix = preApplyModelMatrix;
+        m_NoIndices = noIndices;
 
         m_SkyboxRotationSinCos = new Vector2(math.sin(skyboxRotationY), math.cos(skyboxRotationY));
     }
@@ -145,8 +161,11 @@ public unsafe class PathTracingRenderPass : ScriptableRenderPass
             m_LastFrameRT = null;
         }
         
-        m_ObjectsBuffer?.Release();
-        m_ObjectsBuffer = null;
+        m_SpheresBuffer?.Release();
+        m_SpheresBuffer = null;
+
+        m_TriangleMeshesBuffer?.Release();
+        m_TriangleMeshesBuffer = null;
         
         m_VerticesBuffer?.Release();
         m_VerticesBuffer = null;
@@ -179,66 +198,108 @@ public unsafe class PathTracingRenderPass : ScriptableRenderPass
 
     private void SetupBuffers(CommandBuffer cmd)
     {
-        if (m_ObjectsBuffer == null || m_SceneObjects.Length != m_ObjectsBuffer.count)
-        {
-            m_ObjectsBuffer?.Release();
-            m_ObjectsBuffer = new ComputeBuffer(m_SceneObjects.Length, sizeof(Object), ComputeBufferType.Constant | ComputeBufferType.Structured, ComputeBufferMode.Dynamic);
-        }
-
         NativeList<float3> vertices = default;
         NativeList<int> indices = default;
-        NativeArray<Object> bufferObjects = new NativeArray<Object>(m_SceneObjects.Length, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
+
+        NativeList<Sphere> spheresBuffer = new NativeList<Sphere>(m_SceneObjects.Length, Allocator.Temp);
+        NativeList<TriangleMesh> triangleMeshesBuffer = new NativeList<TriangleMesh>(m_SceneObjects.Length, Allocator.Temp);
         
         for (int i = 0; i < m_SceneObjects.Length; ++i)
         {
             PathTracingObject sceneObject = m_SceneObjects[i];
             
-            uint trianglesOffset = 0;
-            uint trianglesCount = 0;
-            float4x4 modelMatrix = 0;
-            
-            bool isMesh = sceneObject.Type == PathTracingObject.ObjectType.TriangleMesh;
-            if (isMesh)
+            MaterialParameters material = new MaterialParameters
             {
-                if (!vertices.IsCreated)
-                {
-                    vertices = new NativeList<float3>(0, Allocator.Temp);
-                    indices = new NativeList<int>(0, Allocator.Temp);
-                }
-                
-                Mesh mesh = sceneObject.Mesh;
-                Vector3[] meshVertices = mesh.vertices;
-                int[] meshIndices = mesh.triangles;
-
-                int oldVerticesLength = vertices.Length;
-                trianglesOffset = (uint) indices.Length;
-                trianglesCount = (uint) meshIndices.Length;
-                modelMatrix = sceneObject.transform.localToWorldMatrix;
-                
-                vertices.Resize(vertices.Length + meshVertices.Length, NativeArrayOptions.UninitializedMemory);
-                indices.Resize(indices.Length + meshIndices.Length, NativeArrayOptions.UninitializedMemory);
-                
-                void* verticesPtr = (float3*)vertices.GetUnsafePtr() + oldVerticesLength;
-                void* indicesPtr = (int*)indices.GetUnsafePtr() + trianglesOffset;
-                
-                fixed (Vector3* meshVerticesPtr = &meshVertices[0])
-                fixed (int* meshIndicesPtr = &meshIndices[0])
-                {
-                    UnsafeUtility.MemCpy(verticesPtr, meshVerticesPtr, sizeof(float3) * meshVertices.Length);
-                    UnsafeUtility.MemCpy(indicesPtr, meshIndicesPtr, sizeof(int) * trianglesCount);    
-                }
-            }
-            
-            Object bufferObject = new Object
-            {
-                Position = new float4(sceneObject.Position, sceneObject.Size),
                 Color = sceneObject.Color,
-                SmoothnessEmission = new float2(sceneObject.Smoothness, sceneObject.Emission),
-                TrianglesOffsetCount = new uint2(trianglesOffset, trianglesCount),
-                IsMesh = isMesh ? 1 : 0,
-                ModelMatrix = modelMatrix
+                SmoothnessEmission = new float2(sceneObject.Smoothness, sceneObject.Emission)
             };
-            bufferObjects[i] = bufferObject;
+            
+            if (sceneObject.Type == PathTracingObject.ObjectType.TriangleMesh)
+            {
+                Matrix4x4 modelMatrix = sceneObject.transform.localToWorldMatrix;
+
+                if (m_VerticesBuffer == null)
+                {
+                    if (!vertices.IsCreated)
+                    {
+                        vertices = new NativeList<float3>(0, Allocator.Temp);
+                        indices = new NativeList<int>(0, Allocator.Temp);
+                    }
+
+                    Mesh mesh = sceneObject.Mesh;
+                    Vector3[] meshVertices = mesh.vertices;
+                    int[] meshIndices = mesh.triangles;
+
+                    if (m_NoIndices)
+                    {
+                        Vector3[] meshVerticesNoShared = new Vector3[meshIndices.Length];
+                        for (int j = 0; j < meshIndices.Length; j++)
+                        {
+                            meshVerticesNoShared[j] = meshVertices[meshIndices[j]];
+                        }
+
+                        meshVertices = meshVerticesNoShared;
+                    }
+                    
+                    if (m_PreApplyModelMatrix)
+                    {
+                        for (int j = 0; j < meshVertices.Length; j++)
+                        {
+                            meshVertices[j] = modelMatrix.MultiplyPoint(meshVertices[j]);
+                        }
+                    }
+
+                    int oldVerticesLength = vertices.Length;
+                    sceneObject.TrianglesOffset = (uint)indices.Length;
+                    sceneObject.TrianglesCount = (uint)meshIndices.Length;
+
+                    vertices.Resize(vertices.Length + meshVertices.Length, NativeArrayOptions.UninitializedMemory);
+                    indices.Resize(indices.Length + meshIndices.Length, NativeArrayOptions.UninitializedMemory);
+
+                    void* verticesPtr = (float3*)vertices.GetUnsafePtr() + oldVerticesLength;
+                    void* indicesPtr = (int*)indices.GetUnsafePtr() + sceneObject.TrianglesOffset;
+
+                    fixed (Vector3* meshVerticesPtr = &meshVertices[0])
+                    fixed (int* meshIndicesPtr = &meshIndices[0])
+                    {
+                        UnsafeUtility.MemCpy(verticesPtr, meshVerticesPtr, sizeof(float3) * meshVertices.Length);
+                        UnsafeUtility.MemCpy(indicesPtr, meshIndicesPtr, sizeof(int) * sceneObject.TrianglesCount);
+                    }
+                }
+
+                Bounds aabb = sceneObject.AABB;
+                
+                TriangleMesh triangleMesh = new TriangleMesh
+                {
+                    Material = material,
+                    ModelMatrix = modelMatrix,
+                    TrianglesOffsetCount = new uint2(sceneObject.TrianglesOffset, sceneObject.TrianglesCount),
+                    Min = aabb.min,
+                    Max = aabb.max
+                };
+                triangleMeshesBuffer.Add(triangleMesh);
+            }
+            else
+            {
+                Sphere sphere = new Sphere
+                {
+                    PositionRadius = new float4(sceneObject.Position, sceneObject.Size),
+                    Material = material,
+                };
+                spheresBuffer.Add(sphere);   
+            }
+        }
+        
+        if (m_SpheresBuffer == null || spheresBuffer.Length != m_SpheresBuffer.count)
+        {
+            m_SpheresBuffer?.Release();
+            m_SpheresBuffer = new ComputeBuffer(spheresBuffer.Length, sizeof(Sphere), ComputeBufferType.Constant | ComputeBufferType.Structured, ComputeBufferMode.Dynamic);
+        }
+
+        if (m_TriangleMeshesBuffer == null || triangleMeshesBuffer.Length != m_TriangleMeshesBuffer.count)
+        {
+            m_TriangleMeshesBuffer?.Release();
+            m_TriangleMeshesBuffer = new ComputeBuffer(triangleMeshesBuffer.Length, sizeof(TriangleMesh), ComputeBufferType.Constant | ComputeBufferType.Structured, ComputeBufferMode.Dynamic);
         }
 
         if (m_VerticesBuffer == null)
@@ -249,13 +310,19 @@ public unsafe class PathTracingRenderPass : ScriptableRenderPass
             cmd.SetBufferData(m_IndicesBuffer, indices.AsArray());
         }
 
-        cmd.SetBufferData(m_ObjectsBuffer, bufferObjects);
-        cmd.SetGlobalBuffer("_Objects", m_ObjectsBuffer);
+        cmd.SetBufferData(m_SpheresBuffer, spheresBuffer.AsArray());
+        cmd.SetBufferData(m_TriangleMeshesBuffer, triangleMeshesBuffer.AsArray());
+        cmd.SetGlobalBuffer("_Spheres", m_SpheresBuffer);
+        cmd.SetGlobalBuffer("_TriangleMeshes", m_TriangleMeshesBuffer);
         cmd.SetGlobalBuffer("_Vertices", m_VerticesBuffer);
         cmd.SetGlobalBuffer("_Indices", m_IndicesBuffer);
-        cmd.SetGlobalInteger("_ObjectsCount", bufferObjects.Length);
+        cmd.SetGlobalInteger("_SpheresCount", spheresBuffer.Length);
+        cmd.SetGlobalInteger("_TriangleMeshesCount", triangleMeshesBuffer.Length);
 
-        bufferObjects.Dispose();
+        CoreUtils.SetKeyword(cmd, "_MATRICES_PRE_APPLIED", m_PreApplyModelMatrix);
+        CoreUtils.SetKeyword(cmd, "_NO_INDICES", m_NoIndices);
+
+        spheresBuffer.Dispose();
         if (vertices.IsCreated)
         {
             vertices.Dispose();

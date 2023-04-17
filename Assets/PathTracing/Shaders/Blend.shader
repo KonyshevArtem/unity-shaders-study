@@ -1,4 +1,4 @@
-Shader "Custom/Path Tracing/Path Tracing"
+Shader "Custom/Path Tracing/Blend"
 {
     Properties 
     {
