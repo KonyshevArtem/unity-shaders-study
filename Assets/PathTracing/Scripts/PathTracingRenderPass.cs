@@ -230,6 +230,7 @@ public unsafe class PathTracingRenderPass : ScriptableRenderPass
                     Vector3[] meshVertices = mesh.vertices;
                     int[] meshIndices = mesh.triangles;
 
+                    int baseVertexIndex = vertices.Length;
                     if (m_NoIndices)
                     {
                         Vector3[] meshVerticesNoShared = new Vector3[meshIndices.Length];
@@ -240,6 +241,13 @@ public unsafe class PathTracingRenderPass : ScriptableRenderPass
 
                         meshVertices = meshVerticesNoShared;
                     }
+                    else
+                    {
+                        for (int j = 0; j < meshIndices.Length; j++)
+                        {
+                            meshIndices[j] += baseVertexIndex;
+                        }
+                    }
                     
                     if (m_PreApplyModelMatrix)
                     {
@@ -249,21 +257,20 @@ public unsafe class PathTracingRenderPass : ScriptableRenderPass
                         }
                     }
 
-                    int oldVerticesLength = vertices.Length;
-                    sceneObject.TrianglesOffset = (uint)indices.Length;
-                    sceneObject.TrianglesCount = (uint)meshIndices.Length;
+                    sceneObject.TrianglesBegin = (uint)indices.Length / 3;
+                    sceneObject.TrianglesEnd = sceneObject.TrianglesBegin + (uint)meshIndices.Length / 3;
 
                     vertices.Resize(vertices.Length + meshVertices.Length, NativeArrayOptions.UninitializedMemory);
                     indices.Resize(indices.Length + meshIndices.Length, NativeArrayOptions.UninitializedMemory);
 
-                    void* verticesPtr = (float3*)vertices.GetUnsafePtr() + oldVerticesLength;
-                    void* indicesPtr = (int*)indices.GetUnsafePtr() + sceneObject.TrianglesOffset;
+                    void* verticesPtr = (float3*)vertices.GetUnsafePtr() + baseVertexIndex;
+                    void* indicesPtr = (int*)indices.GetUnsafePtr() + sceneObject.TrianglesBegin * 3;
 
                     fixed (Vector3* meshVerticesPtr = &meshVertices[0])
                     fixed (int* meshIndicesPtr = &meshIndices[0])
                     {
                         UnsafeUtility.MemCpy(verticesPtr, meshVerticesPtr, sizeof(float3) * meshVertices.Length);
-                        UnsafeUtility.MemCpy(indicesPtr, meshIndicesPtr, sizeof(int) * sceneObject.TrianglesCount);
+                        UnsafeUtility.MemCpy(indicesPtr, meshIndicesPtr, sizeof(int) * sceneObject.TrianglesCount * 3);
                     }
                 }
 
@@ -273,7 +280,7 @@ public unsafe class PathTracingRenderPass : ScriptableRenderPass
                 {
                     Material = material,
                     ModelMatrix = modelMatrix,
-                    TrianglesOffsetCount = new uint2(sceneObject.TrianglesOffset, sceneObject.TrianglesCount),
+                    TrianglesOffsetCount = new uint2(sceneObject.TrianglesBegin, sceneObject.TrianglesEnd),
                     Min = aabb.min,
                     Max = aabb.max
                 };

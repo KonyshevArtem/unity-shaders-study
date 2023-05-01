@@ -30,7 +30,7 @@ struct TriangleMesh
 {
     float4x4 modelMatrix;
     MaterialParameters material;
-    uint2 triangleOffsetCount;
+    uint2 trianglesBeginEnd;
     float3 min;
     float3 max;
 };

@@ -34,7 +34,7 @@ Varyings vert(Attributes input)
     return output;
 }
 
-bool GetClosestTriangleHit(float3 rayStartPoint, float3 rayDir, uint triangleOffset, uint triangleCount, float4x4 modelMatrix, out float3 position, out float3 normal, out float distance)
+bool GetClosestTriangleHit(float3 rayStartPoint, float3 rayDir, uint trianglesBegin, uint trianglesEnd, float4x4 modelMatrix, out float3 position, out float3 normal, out float distance)
 {
     float3 outPosition;
     float3 outNormal;
@@ -42,7 +42,7 @@ bool GetClosestTriangleHit(float3 rayStartPoint, float3 rayDir, uint triangleOff
 
     bool hasIntersection = false;
     float closestTriangleDistance = 0;
-    for (uint j = triangleOffset; j < triangleOffset + triangleCount / 3; ++j)
+    for (uint j = trianglesBegin; j < trianglesEnd; ++j)
     {
         #ifdef _NO_INDICES
         Triangle vertices = _Vertices[j];
@@ -117,7 +117,7 @@ bool GetClosestObjectHit(float3 rayStartPoint, float3 rayDir, out Hit hit)
             continue;
         }
         
-        if (GetClosestTriangleHit(rayStartPoint, rayDir, mesh.triangleOffsetCount.x, mesh.triangleOffsetCount.y, mesh.modelMatrix, position, normal, distance))
+        if (GetClosestTriangleHit(rayStartPoint, rayDir, mesh.trianglesBeginEnd.x, mesh.trianglesBeginEnd.y, mesh.modelMatrix, position, normal, distance))
         {
             if (!hasHit || distance < closestObjectDistance)
             {

@@ -25,8 +25,9 @@ public class PathTracingObject : MonoBehaviour
     public float Emission => m_Emission;
     public Mesh Mesh => m_Type == ObjectType.TriangleMesh && m_MeshFilter != null ? m_MeshFilter.sharedMesh : null;
     public Bounds AABB => m_Renderer != null ? m_Renderer.bounds : default;
-    public uint TrianglesOffset { get; set; }
-    public uint TrianglesCount { get; set; }
+    public uint TrianglesBegin { get; set; }
+    public uint TrianglesEnd { get; set; }
+    public uint TrianglesCount => TrianglesEnd - TrianglesBegin;
 
     void Awake()
     {
