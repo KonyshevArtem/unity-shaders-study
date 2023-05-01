@@ -48,10 +48,15 @@ public unsafe class PathTracingRenderPass : ScriptableRenderPass
     private bool m_PreApplyModelMatrix;
     private bool m_NoIndices;
     private Vector2 m_SkyboxRotationSinCos;
+    private int m_FrameCount;
 
     private RenderTargetHandle m_CurrentFrameHandle;
     private RenderTargetIdentifier m_CurrentFrameIdentifier;
     private RenderTexture m_LastFrameRT;
+
+#if UNITY_EDITOR
+    private RenderTexture m_LastFrameSceneViewRT;
+#endif
 
     public PathTracingRenderPass(Material pathTracingShader, Material blendShader, Cubemap skybox)
     {
@@ -93,17 +98,22 @@ public unsafe class PathTracingRenderPass : ScriptableRenderPass
 
         cmd.GetTemporaryRT(m_CurrentFrameHandle.id, desc);
 
-        if (m_LastFrameRT == null || m_LastFrameRT.width != desc.width || m_LastFrameRT.height != desc.height)
-        {
-            if (m_LastFrameRT != null)
-            {
-                m_LastFrameRT.Release();
-            }
+        m_PathTracingMaterial.SetTexture(SKYBOX_PROP_ID, m_Skybox);
+    }
 
-            m_LastFrameRT = new RenderTexture(desc);
+    private static void ConfigureLastFrameRT(ref RenderTexture lastFrameRT, RenderTextureDescriptor descriptor)
+    {
+        if (lastFrameRT != null && lastFrameRT.width == descriptor.width && lastFrameRT.height == descriptor.height)
+        {
+            return;
         }
 
-        m_PathTracingMaterial.SetTexture(SKYBOX_PROP_ID, m_Skybox);
+        if (lastFrameRT != null)
+        {
+            lastFrameRT.Release();
+        }
+
+        lastFrameRT = new RenderTexture(descriptor);
     }
 
     public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
@@ -111,6 +121,17 @@ public unsafe class PathTracingRenderPass : ScriptableRenderPass
         CommandBuffer cmd = CommandBufferPool.Get();
         using (new ProfilingScope(cmd, m_ProfilingSampler))
         {
+#if UNITY_EDITOR
+            if (renderingData.cameraData.isSceneViewCamera)
+            {
+                ConfigureLastFrameRT(ref m_LastFrameSceneViewRT, renderingData.cameraData.cameraTargetDescriptor);
+            }
+            else
+#endif
+            {
+                ConfigureLastFrameRT(ref m_LastFrameRT, renderingData.cameraData.cameraTargetDescriptor);
+            }
+
             context.ExecuteCommandBuffer(cmd);
             cmd.Clear();
 
@@ -133,15 +154,23 @@ public unsafe class PathTracingRenderPass : ScriptableRenderPass
             cmd.SetGlobalInt("_MaxBounces", (int)m_MaxBounces);
             cmd.SetGlobalInt("_MaxIterations", (int)m_MaxIterations);
             cmd.SetGlobalVector("_SkyboxRotationSinCos", m_SkyboxRotationSinCos);
-            cmd.SetGlobalFloat("_FrameCount", Time.frameCount);
+            cmd.SetGlobalFloat("_FrameCount", ++m_FrameCount);
 
             cmd.SetRenderTarget(m_CurrentFrameIdentifier);
             cmd.DrawMesh(m_FullScreenMesh, trs, m_PathTracingMaterial);
 
             if (Application.isPlaying)
             {
-                cmd.Blit(m_CurrentFrameIdentifier, m_LastFrameRT, m_BlendMaterial);
-                cmd.Blit(m_LastFrameRT, renderingData.cameraData.renderer.cameraColorTarget);
+#if UNITY_EDITOR
+                if (renderingData.cameraData.isSceneViewCamera)
+                {
+                    BlendLastFrame(cmd, renderingData.cameraData.renderer.cameraColorTarget, m_LastFrameSceneViewRT);
+                }
+                else
+#endif
+                {
+                    BlendLastFrame(cmd, renderingData.cameraData.renderer.cameraColorTarget, m_LastFrameRT);
+                }
             }
             else
             {
@@ -153,6 +182,12 @@ public unsafe class PathTracingRenderPass : ScriptableRenderPass
         }
     }
 
+    private void BlendLastFrame(CommandBuffer cmd, RenderTargetIdentifier currentFrameIdentifier, RenderTexture lastFrameRT)
+    {
+        cmd.Blit(m_CurrentFrameIdentifier, lastFrameRT, m_BlendMaterial);
+        cmd.Blit(m_LastFrameRT, currentFrameIdentifier);
+    }
+
     public void Dispose()
     {
         if (m_LastFrameRT != null)
@@ -160,6 +195,14 @@ public unsafe class PathTracingRenderPass : ScriptableRenderPass
             m_LastFrameRT.Release();
             m_LastFrameRT = null;
         }
+
+#if UNITY_EDITOR
+        if (m_LastFrameSceneViewRT != null)
+        {
+            m_LastFrameSceneViewRT.Release();
+            m_LastFrameSceneViewRT = null;
+        }
+#endif
         
         m_SpheresBuffer?.Release();
         m_SpheresBuffer = null;
