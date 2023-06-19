@@ -31,7 +31,11 @@ Shader "Custom/Volumetric Effect/Volumetric Effect"
             #pragma vertex vert
             #pragma fragment frag
 
+            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE
+            #pragma multi_compile_fragment _ _SHADOWS_SOFT
+
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
             #include "Assets/VolumetricEffects/Shaders/BoxIntersection.hlsl"
 
             #define MAX_VOLUME_STEPS 50
@@ -101,7 +105,11 @@ Shader "Custom/Volumetric Effect/Volumetric Effect"
 
                 float3 inScattering = _MainLightColor.rgb * beersLaw(lightTotalDensity);
                 float outScattering = _Scattering * density;
-                return inScattering * outScattering * _Step;
+
+                float4 shadowCoord = TransformWorldToShadowCoord(pos);
+                half shadow = MainLightRealtimeShadow(shadowCoord);
+
+                return inScattering * outScattering * _Step * shadow;
             }
             
             half4 frag(Varyings input) : SV_Target
@@ -125,6 +133,9 @@ Shader "Custom/Volumetric Effect/Volumetric Effect"
                     transmittance *= beersLaw(density);
                     light += transmittance * calculateLight(pos, density);
                 }
+
+                half3 ambient = half3(unity_SHAr.w, unity_SHAg.w, unity_SHAb.w);
+                light += ambient;
                 
                 return half4(_Color.rgb * light, 1 - transmittance);
             }
