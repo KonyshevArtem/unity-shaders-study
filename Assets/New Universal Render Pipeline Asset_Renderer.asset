@@ -78,6 +78,21 @@ MonoBehaviour:
   m_EnableInSceneView: 0
   m_PreApplyModelMatrix: 1
   m_NoIndices: 1
+--- !u!114 &-1470085058722345430
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30669fdc4ea0248e29f42eac33bf99bf, type: 3}
+  m_Name: VolumetricEffectRenderFeature
+  m_EditorClassIdentifier: 
+  m_Active: 1
+  m_ComposeShader: {fileID: 4800000, guid: bb7ec80885007480aaf8b0737a8aabfc, type: 3}
+  m_Downscale: 0.5
 --- !u!114 &-987739235032910552
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -133,7 +148,8 @@ MonoBehaviour:
   - {fileID: -7944623116575308618}
   - {fileID: -620731632772681343}
   - {fileID: -2887012102285263456}
-  m_RendererFeatureMap: 28b5252566d84af2ac3820fb8d1966a339bb595928da81d2178a5e0f0ffa9fb0b6042c2e5e07bf918171bc67deb762f7a07d08fdc945efd7
+  - {fileID: -1470085058722345430}
+  m_RendererFeatureMap: 28b5252566d84af2ac3820fb8d1966a339bb595928da81d2178a5e0f0ffa9fb0b6042c2e5e07bf918171bc67deb762f7a07d08fdc945efd72ace3e8d6d3599eb
   m_UseNativeRenderPass: 0
   postProcessData: {fileID: 0}
   xrSystemData: {fileID: 11400000, guid: 60e1133243b97e347b653163a8c01b64, type: 2}

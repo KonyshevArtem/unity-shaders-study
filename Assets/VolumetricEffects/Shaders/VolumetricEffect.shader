@@ -15,7 +15,7 @@ Shader "Custom/Volumetric Effect/Volumetric Effect"
     {
         Tags
         {
-            "LightMode"="UniversalForward"
+            "LightMode"="VolumetricEffect"
             "RenderType"="Transparent"
             "Queue"="Transparent"
             "DisableBatching"="True"
@@ -47,6 +47,8 @@ Shader "Custom/Volumetric Effect/Volumetric Effect"
             uniform float _Step;
             uniform float _NoiseIndexScale;
             uniform float3 _WindVelocity;
+
+            uniform half3 _Ambient;
 
             TEXTURE3D_HALF(_Noise); SAMPLER(sampler_Noise);
             half4 _Noise_ST;
@@ -134,8 +136,7 @@ Shader "Custom/Volumetric Effect/Volumetric Effect"
                     light += transmittance * calculateLight(pos, density);
                 }
 
-                half3 ambient = half3(unity_SHAr.w, unity_SHAg.w, unity_SHAb.w);
-                light += ambient;
+                light += _Ambient;
                 
                 return half4(_Color.rgb * light, 1 - transmittance);
             }
