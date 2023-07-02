@@ -50,7 +50,7 @@ Shader "Custom/Volumetric Effect/Volumetric Effect"
 
             uniform half3 _Ambient;
 
-            TEXTURE3D_HALF(_Noise); SAMPLER(sampler_Noise);
+            TEXTURE3D_HALF(_Noise); SAMPLER(sampler_point_repeat);
             half4 _Noise_ST;
 
             struct Attributes
@@ -75,12 +75,12 @@ Shader "Custom/Volumetric Effect/Volumetric Effect"
                 return o;
             }
 
-            half3 getNoiseUV(float3 pos)
+            half getDensity(float3 pos)
             {
                 half3 uv;
                 uv.xz = TRANSFORM_TEX(pos.xz, _Noise) + _WindVelocity.xz * _Time.xx;
                 uv.y = pos.y * _NoiseIndexScale + _WindVelocity.y * _Time.x;
-                return uv;
+                return SAMPLE_TEXTURE3D(_Noise, sampler_point_repeat, uv).r;
             }
 
             half beersLaw(half distance)
@@ -96,13 +96,17 @@ Shader "Custom/Volumetric Effect/Volumetric Effect"
                 float3 lightFarIntersection;
                 boxIntersection(pos, _MainLightPosition.xyz, lightNearIntersection, lightFarIntersection);
 
-                float3 lightTotalDensity = 0;
+                half lightTotalDensity = 0;
                 half lightSegments = _Step > 0 ? floor(distance(lightNearIntersection, lightFarIntersection) / _Step) : 0;
+
+                UNITY_UNROLL
                 for (int j = 0; j < MAX_LIGHT_STEPS; ++j)
                 {
-                    float3 lightPos = pos + _Step * j * _MainLightPosition.xyz;
-                    half3 uv = getNoiseUV(lightPos);
-                    lightTotalDensity += j < lightSegments ? SAMPLE_TEXTURE3D(_Noise, sampler_Noise, uv).r : 0;
+                    if (j < lightSegments)
+                    {
+                        float3 lightPos = pos + _Step * j * _MainLightPosition.xyz;
+                        lightTotalDensity += getDensity(lightPos);
+                    }
                 }
 
                 float3 inScattering = _MainLightColor.rgb * beersLaw(lightTotalDensity);
@@ -127,13 +131,16 @@ Shader "Custom/Volumetric Effect/Volumetric Effect"
 
                 float3 light = 0;
                 float transmittance = 1;
+                
                 for (int i = 0; i < MAX_VOLUME_STEPS; ++i)
                 {
-                    float3 pos = nearIntersection + _Step * i * forward;
-                    half3 uv = getNoiseUV(pos);
-                    half density = i < segments ? SAMPLE_TEXTURE3D(_Noise, sampler_Noise, uv).r : 0;
-                    transmittance *= beersLaw(density);
-                    light += transmittance * calculateLight(pos, density);
+                    if (i < segments)
+                    {
+                        float3 pos = nearIntersection + _Step * i * forward;
+                        half density = getDensity(pos);
+                        transmittance *= beersLaw(density);
+                        light += transmittance * calculateLight(pos, density);
+                    }
                 }
 
                 light += _Ambient;

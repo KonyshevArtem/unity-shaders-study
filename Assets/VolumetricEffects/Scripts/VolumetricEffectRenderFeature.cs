@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
-using VolumetricEffects.Scripts;
 
 public class VolumetricEffectRenderFeature : ScriptableRendererFeature
 {
@@ -16,16 +15,8 @@ public class VolumetricEffectRenderFeature : ScriptableRendererFeature
 
     public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
     {
-        if (m_Pass == null)
+        if (m_Pass != null)
         {
-            return;
-        }
-
-        VolumetricEffect[] volumes = FindObjectsOfType<VolumetricEffect>();
-
-        if (volumes.Length > 0)
-        {
-            m_Pass.Setup(volumes);
             renderer.EnqueuePass(m_Pass);
         }
     }

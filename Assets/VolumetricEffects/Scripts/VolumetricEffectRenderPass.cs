@@ -2,13 +2,13 @@ using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
-using VolumetricEffects.Scripts;
 
 public class VolumetricEffectRenderPass : ScriptableRenderPass
 {
     private static readonly ProfilingSampler m_ProfilingSampler = new ProfilingSampler("Volumetric Effects");
+    private static readonly ShaderTagId m_ShaderTagId = new ShaderTagId("VolumetricEffect");
 
-    private VolumetricEffect[] m_Volumes;
+    private FilteringSettings m_FilteringSettings;
 
     private readonly RenderTargetHandle m_TargetHandle;
     private readonly RenderTargetIdentifier m_TargetIdentifier;
@@ -25,12 +25,9 @@ public class VolumetricEffectRenderPass : ScriptableRenderPass
         m_ComposeMaterial = CoreUtils.CreateEngineMaterial(composeShader);
         m_Downscale = downscale;
 
-        ConfigureClear(ClearFlag.Color, Color.clear);
-    }
+        m_FilteringSettings = new FilteringSettings(RenderQueueRange.transparent);
 
-    public void Setup(VolumetricEffect[] volumes)
-    {
-        m_Volumes = volumes;
+        ConfigureClear(ClearFlag.Color, Color.clear);
     }
 
     public override void Configure(CommandBuffer cmd, RenderTextureDescriptor cameraTextureDescriptor)
@@ -54,15 +51,8 @@ public class VolumetricEffectRenderPass : ScriptableRenderPass
             context.ExecuteCommandBuffer(cmd);
             cmd.Clear();
 
-            for (int i = 0; i < m_Volumes.Length; i++)
-            {
-                Renderer renderer = m_Volumes[i].Renderer;
-                Material material = m_Volumes[i].Material;
-                if (renderer != null && material != null)
-                {
-                    cmd.DrawRenderer(renderer, material);
-                }
-            }
+            DrawingSettings drawSettings = CreateDrawingSettings(m_ShaderTagId, ref renderingData, SortingCriteria.CommonTransparent);
+            context.DrawRenderers(renderingData.cullResults, ref drawSettings, ref m_FilteringSettings);
 
             cmd.Blit(m_TargetIdentifier, renderingData.cameraData.renderer.cameraColorTarget, m_ComposeMaterial);
         }
