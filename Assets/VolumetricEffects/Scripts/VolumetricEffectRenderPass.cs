@@ -7,6 +7,7 @@ public class VolumetricEffectRenderPass : ScriptableRenderPass
 {
     private static readonly ProfilingSampler m_ProfilingSampler = new ProfilingSampler("Volumetric Effects");
     private static readonly ShaderTagId m_ShaderTagId = new ShaderTagId("VolumetricEffect");
+    private static readonly int m_AmbientScalePropId = Shader.PropertyToID("_AmbientScale");
 
     private FilteringSettings m_FilteringSettings;
 
@@ -27,6 +28,7 @@ public class VolumetricEffectRenderPass : ScriptableRenderPass
 
         m_FilteringSettings = new FilteringSettings(RenderQueueRange.transparent);
 
+        ConfigureInput(ScriptableRenderPassInput.Depth);
         ConfigureClear(ClearFlag.Color, Color.clear);
     }
 
@@ -36,9 +38,9 @@ public class VolumetricEffectRenderPass : ScriptableRenderPass
 
         // seems like Unity does not setup ambient light for custom passes, so I do it manually
         SphericalHarmonicsL2 sh = RenderSettings.ambientProbe;
-        Color ambient = new Color(sh[0, 0], sh[1, 0], sh[2, 0]);
-        cmd.SetGlobalColor("_Ambient", ambient);
-
+        Vector4 ambientScale = new Vector4(sh[0, 0], sh[1, 0], sh[2, 0], 1 / m_Downscale);
+        cmd.SetGlobalVector(m_AmbientScalePropId, ambientScale);
+        
         cmd.GetTemporaryRT(m_TargetHandle.id, (int) (cameraTextureDescriptor.width * m_Downscale), (int)(cameraTextureDescriptor.height * m_Downscale), 0, FilterMode.Bilinear, GraphicsFormat.R8G8B8A8_SRGB);
         ConfigureTarget(m_TargetIdentifier);
     }

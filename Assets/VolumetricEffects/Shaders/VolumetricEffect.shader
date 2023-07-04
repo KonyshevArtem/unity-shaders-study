@@ -41,6 +41,7 @@ Shader "Custom/Volumetric Effect/Volumetric Effect"
             #define MAX_VOLUME_STEPS 50
             #define MAX_LIGHT_STEPS 10
 
+            // material properties
             uniform half4 _Color;
             uniform float _Absorption;
             uniform float _Scattering;
@@ -48,9 +49,11 @@ Shader "Custom/Volumetric Effect/Volumetric Effect"
             uniform float _NoiseIndexScale;
             uniform float3 _WindVelocity;
 
-            uniform half3 _Ambient;
+            // manually set from render pass
+            uniform half4 _AmbientScale; // xyz - ambient color, w - RT scale
 
-            TEXTURE3D_HALF(_Noise); SAMPLER(sampler_point_repeat);
+            TEXTURE3D_HALF(_Noise); SAMPLER(sampler_point_mirror);
+            TEXTURE2D_FLOAT(_CameraDepthTexture); SAMPLER(sampler_CameraDepthTexture);
             half4 _Noise_ST;
 
             struct Attributes
@@ -80,7 +83,7 @@ Shader "Custom/Volumetric Effect/Volumetric Effect"
                 half3 uv;
                 uv.xz = TRANSFORM_TEX(pos.xz, _Noise) + _WindVelocity.xz * _Time.xx;
                 uv.y = pos.y * _NoiseIndexScale + _WindVelocity.y * _Time.x;
-                return SAMPLE_TEXTURE3D(_Noise, sampler_point_repeat, uv).r;
+                return SAMPLE_TEXTURE3D(_Noise, sampler_point_mirror, uv).r;
             }
 
             half beersLaw(half distance)
@@ -117,6 +120,14 @@ Shader "Custom/Volumetric Effect/Volumetric Effect"
 
                 return inScattering * outScattering * _Step * shadow;
             }
+
+            float3 getDepthPosWS(float2 positionCS)
+            {
+                half2 depthUV = positionCS.xy * _AmbientScale.w * (_ScreenParams.zw - 1);
+                float depth = SAMPLE_TEXTURE2D(_CameraDepthTexture, sampler_CameraDepthTexture, depthUV).r;
+                depthUV.y = lerp(depthUV.y, 1 - depthUV.y, saturate(_ScaleBiasRt.x));
+                return ComputeWorldSpacePosition(depthUV, depth, UNITY_MATRIX_I_VP);
+            }
             
             half4 frag(Varyings input) : SV_Target
             {
@@ -126,7 +137,12 @@ Shader "Custom/Volumetric Effect/Volumetric Effect"
                 float3 farIntersection;
                 boxIntersection(_WorldSpaceCameraPos, forward, nearIntersection, farIntersection);
 
-                float dist = distance(nearIntersection, farIntersection);
+                float3 depthPos = getDepthPosWS(input.positionCS);
+                float3 cameraToDepth = depthPos - _WorldSpaceCameraPos;
+                float3 cameraToNearInt = nearIntersection - _WorldSpaceCameraPos;
+                clip(dot(cameraToDepth, cameraToDepth) - dot(cameraToNearInt, cameraToNearInt));
+
+                float dist = min(distance(nearIntersection, farIntersection), distance(nearIntersection, depthPos));
                 float segments = _Step > 0 ? floor(dist / _Step) : 0;
 
                 float3 light = 0;
@@ -143,7 +159,7 @@ Shader "Custom/Volumetric Effect/Volumetric Effect"
                     }
                 }
 
-                light += _Ambient;
+                light += _AmbientScale.rgb;
                 
                 return half4(_Color.rgb * light, 1 - transmittance);
             }
