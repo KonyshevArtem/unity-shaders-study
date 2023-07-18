@@ -26,7 +26,8 @@ void boxIntersection(in float3 rayOrigin, in float3 rayDirection, out float3 nea
     }
 
     // if the rayOrigin is inside the box then it is equal to nearIntersection point
-    tN = max(tN, 0);
+    // use 0.001 instead of 0 to compensate for precision error
+    tN = max(tN, 0.001);
 
     nearIntersection = mul(UNITY_MATRIX_M, float4(ro + tN * rd, 1)).xyz;
     farIntersection = mul(UNITY_MATRIX_M, float4(ro + tF * rd, 1)).xyz;

@@ -21,9 +21,14 @@ Shader "Custom/Volumetric Effect/Volumetric Effect"
             "DisableBatching"="True"
         }
 
-        Blend SrcAlpha OneMinusSrcAlpha
+        ZTest Always
         ZWrite Off
         Cull Front
+
+        BlendOp 0 Add
+        BlendOp 1 Max
+        Blend 0 SrcAlpha OneMinusSrcAlpha
+        Blend 1 One Zero
 
         Pass
         {
@@ -65,6 +70,12 @@ Shader "Custom/Volumetric Effect/Volumetric Effect"
             {
                 float4 positionCS : SV_POSITION;
                 float3 positionWS : TEXCOORD00;
+            };
+
+            struct FragmentOutput
+            {
+                half4 color : SV_Target0;
+                float2 depthMinMax : SV_Target1;
             };
 
             Varyings vert(Attributes v)
@@ -129,7 +140,7 @@ Shader "Custom/Volumetric Effect/Volumetric Effect"
                 return ComputeWorldSpacePosition(depthUV, depth, UNITY_MATRIX_I_VP);
             }
             
-            half4 frag(Varyings input) : SV_Target
+            FragmentOutput frag(Varyings input) : SV_Target
             {
                 float3 forward = normalize(input.positionWS - _WorldSpaceCameraPos.xyz);
 
@@ -137,7 +148,7 @@ Shader "Custom/Volumetric Effect/Volumetric Effect"
                 float3 farIntersection;
                 boxIntersection(_WorldSpaceCameraPos, forward, nearIntersection, farIntersection);
 
-                float3 depthPos = getDepthPosWS(input.positionCS);
+                float3 depthPos = getDepthPosWS(input.positionCS.xy);
                 float3 cameraToDepth = depthPos - _WorldSpaceCameraPos;
                 float3 cameraToNearInt = nearIntersection - _WorldSpaceCameraPos;
                 clip(dot(cameraToDepth, cameraToDepth) - dot(cameraToNearInt, cameraToNearInt));
@@ -161,7 +172,13 @@ Shader "Custom/Volumetric Effect/Volumetric Effect"
 
                 light += _AmbientScale.rgb;
                 
-                return half4(_Color.rgb * light, 1 - transmittance);
+                float2 min = mul(UNITY_MATRIX_VP, float4(nearIntersection, 1)).zw;
+                float2 max = mul(UNITY_MATRIX_VP, float4(farIntersection, 1)).zw;
+
+                FragmentOutput output;
+                output.color = half4(_Color.rgb * light, 1 - transmittance);
+                output.depthMinMax = float2(min.x / min.y, 1 - max.x / max.y);
+                return output;
             }
             ENDHLSL
         }
