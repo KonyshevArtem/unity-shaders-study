@@ -93,6 +93,8 @@ MonoBehaviour:
   m_Active: 1
   m_ComposeShader: {fileID: 4800000, guid: bb7ec80885007480aaf8b0737a8aabfc, type: 3}
   m_Downscale: 0.5
+  m_Dither: 1
+  m_Blur: 1
 --- !u!114 &-987739235032910552
 MonoBehaviour:
   m_ObjectHideFlags: 0

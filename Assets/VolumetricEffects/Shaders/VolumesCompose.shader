@@ -1,14 +1,19 @@
 Shader "Hidden/VolumetricEffects/Compose"
 {
+    Properties
+    {
+        _MainTex("Main Tex", 2D) = "black"    
+    }
     SubShader
     {
+        ZTest Always
+        ZWrite Off
+        Cull Off
+
         Pass
         {
             Name "Compose"
-            ZTest Always
-            ZWrite Off
-            Cull Off
-            Blend SrcAlpha OneMinusSrcAlpha
+            Blend One OneMinusSrcAlpha
 
             HLSLPROGRAM
             #pragma vertex FullscreenVert
@@ -16,12 +21,12 @@ Shader "Hidden/VolumetricEffects/Compose"
 
             #include "Packages/com.unity.render-pipelines.universal/Shaders/Utils/Fullscreen.hlsl"
 
-            TEXTURE2D_HALF(_VolumesRT);
-            SAMPLER(sampler_VolumesRT);
+            TEXTURE2D_HALF(_MainTex);
+            SAMPLER(sampler_MainTex);
 
             half4 Fragment(Varyings input) : SV_Target
             {
-                return SAMPLE_TEXTURE2D(_VolumesRT, sampler_VolumesRT, input.uv);
+                return SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, input.uv);
             }
             ENDHLSL
         }
@@ -29,9 +34,6 @@ Shader "Hidden/VolumetricEffects/Compose"
         Pass
         {
             Name "Clear"
-            ZTest Always
-            ZWrite Off
-            Cull Off
 
             HLSLPROGRAM
             #pragma vertex FullscreenVert
@@ -49,6 +51,32 @@ Shader "Hidden/VolumetricEffects/Compose"
             {
                 return (FragmentOutput) 0;
             }
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "Blur Horizontal"
+
+            HLSLPROGRAM
+            #pragma vertex FullscreenVert
+            #pragma fragment Fragment
+
+            #define HORIZONTAL
+            #include "GaussianBlur.hlsl"
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "Blur Vertical"
+
+            HLSLPROGRAM
+            #pragma vertex FullscreenVert
+            #pragma fragment Fragment
+
+            #define VERTICAL
+            #include "GaussianBlur.hlsl"
             ENDHLSL
         }
     }

@@ -8,6 +8,7 @@ public class VolumetricEffectRenderPass : ScriptableRenderPass
     private static readonly ProfilingSampler m_ProfilingSampler = new ProfilingSampler("Volumetric Effects");
     private static readonly ShaderTagId m_ShaderTagId = new ShaderTagId("VolumetricEffect");
     private static readonly int m_AmbientScalePropId = Shader.PropertyToID("_AmbientScale");
+    private static readonly int m_BlurTargetId = Shader.PropertyToID("_BlurTargetId");
 
     private static readonly string[] m_TargetNames = { "_VolumesRT", "_DepthProxy" };
     private static readonly GraphicsFormat[] m_GraphicsFormats = { GraphicsFormat.R8G8B8A8_SRGB, GraphicsFormat.R16G16_UNorm };
@@ -16,11 +17,14 @@ public class VolumetricEffectRenderPass : ScriptableRenderPass
 
     private readonly RenderTargetHandle[] m_TargetHandles = new RenderTargetHandle[m_TargetNames.Length];
     private readonly RenderTargetIdentifier[] m_TargetIdentifiers = new RenderTargetIdentifier[m_TargetNames.Length];
+    private readonly RenderTargetIdentifier m_BlurTargetIdentifier = new RenderTargetIdentifier(m_BlurTargetId);
 
     private readonly Material m_ComposeMaterial;
     private readonly float m_Downscale;
+    private readonly bool m_Dither;
+    private readonly bool m_Blur;
 
-    public VolumetricEffectRenderPass(Shader composeShader, float downscale)
+    public VolumetricEffectRenderPass(Shader composeShader, float downscale, bool dither, bool blur)
     {
         renderPassEvent = RenderPassEvent.BeforeRenderingTransparents;
 
@@ -32,6 +36,8 @@ public class VolumetricEffectRenderPass : ScriptableRenderPass
 
         m_ComposeMaterial = CoreUtils.CreateEngineMaterial(composeShader);
         m_Downscale = downscale;
+        m_Dither = dither;
+        m_Blur = blur;
 
         m_FilteringSettings = new FilteringSettings(RenderQueueRange.transparent);
 
@@ -55,6 +61,7 @@ public class VolumetricEffectRenderPass : ScriptableRenderPass
         {
             cmd.GetTemporaryRT(m_TargetHandles[i].id, width, height, 0, FilterMode.Bilinear, m_GraphicsFormats[i]);
         }
+        cmd.GetTemporaryRT(m_BlurTargetId, width, height, 0, FilterMode.Bilinear, m_GraphicsFormats[0]);
 
         ConfigureTarget(m_TargetIdentifiers, BuiltinRenderTextureType.None);
     }
@@ -67,10 +74,17 @@ public class VolumetricEffectRenderPass : ScriptableRenderPass
             context.ExecuteCommandBuffer(cmd);
             cmd.Clear();
 
+            CoreUtils.SetKeyword(cmd, "_DITHER", m_Dither);
             ClearTargets(ref context, cmd, ref renderingData);
 
             DrawingSettings drawSettings = CreateDrawingSettings(m_ShaderTagId, ref renderingData, SortingCriteria.CommonTransparent);
             context.DrawRenderers(renderingData.cullResults, ref drawSettings, ref m_FilteringSettings);
+
+            if (m_Blur)
+            {
+                cmd.Blit(m_TargetIdentifiers[0], m_BlurTargetIdentifier, m_ComposeMaterial, 2);
+                cmd.Blit(m_BlurTargetIdentifier, m_TargetIdentifiers[0], m_ComposeMaterial, 3);
+            }
 
             cmd.Blit(m_TargetIdentifiers[0], renderingData.cameraData.renderer.cameraColorTarget, m_ComposeMaterial, 0);
         }
@@ -97,6 +111,7 @@ public class VolumetricEffectRenderPass : ScriptableRenderPass
         {
             cmd.ReleaseTemporaryRT(m_TargetHandles[i].id);
         }
+        cmd.ReleaseTemporaryRT(m_BlurTargetId);
     }
 
     public void Dispose()
