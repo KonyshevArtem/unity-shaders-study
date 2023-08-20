@@ -9,6 +9,9 @@ Shader "Custom/Volumetric Effect/Volumetric Effect"
         _Density ("Density", 3D) = "white"
         _DensityIndexScale("Density Index Scale", Float) = 64
         _WindVelocity("Wind Velocity", Vector) = (0, 0, 0)
+        _SDFOffset("SDF Offset", Float) = 0
+        _SDFFadeDistance("SDF Fade Distance", Float) = 0.1
+        _SDF("_SDF", 3D) = "black"
     }
 
     SubShader
@@ -37,6 +40,7 @@ Shader "Custom/Volumetric Effect/Volumetric Effect"
             #pragma fragment frag
 
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE
+            #pragma multi_compile_fragment _ _SDF_SHAPE
             #pragma multi_compile_fragment _ _SHADOWS_SOFT
 
             #pragma multi_compile _ _DITHER
@@ -55,12 +59,15 @@ Shader "Custom/Volumetric Effect/Volumetric Effect"
             uniform float _Step;
             uniform float _DensityIndexScale;
             uniform float3 _WindVelocity;
+            uniform half _SDFOffset;
+            uniform half _SDFFadeDistance;
 
             // manually set from render pass
             uniform half4 _AmbientScale; // xyz - ambient color, w - RT scale
 
             TEXTURE3D_HALF(_Density); SAMPLER(sampler_point_mirror);
             TEXTURE2D_FLOAT(_CameraDepthTexture); SAMPLER(sampler_CameraDepthTexture);
+            TEXTURE3D_HALF(_SDF); SAMPLER(sampler_SDF);
             half4 _Density_ST;
 
             struct Attributes
@@ -96,7 +103,15 @@ Shader "Custom/Volumetric Effect/Volumetric Effect"
                 half3 uv;
                 uv.xz = TRANSFORM_TEX(pos.xz, _Density) + _WindVelocity.xz * _Time.xx;
                 uv.y = pos.y * _DensityIndexScale + _WindVelocity.y * _Time.x;
-                return SAMPLE_TEXTURE3D(_Density, sampler_point_mirror, uv).r;
+                half density = SAMPLE_TEXTURE3D(_Density, sampler_point_mirror, uv).r;
+
+#ifdef _SDF_SHAPE
+                float3 localPos = mul(UNITY_MATRIX_I_M, float4(pos, 1)).xyz;
+                float sdfDistance = saturate(SAMPLE_TEXTURE3D(_SDF, sampler_SDF, localPos + 0.5).r + _SDFOffset);
+                density *= saturate(1 - sdfDistance / _SDFFadeDistance);
+#endif
+
+                return density;
             }
 
             half beersLaw(half distance)
@@ -179,6 +194,14 @@ Shader "Custom/Volumetric Effect/Volumetric Effect"
                 float3 light = 0;
                 float transmittance = 1;
                 
+#ifdef _SDF_SHAPE
+                float4 min = 0;
+                float4 max = 0;
+#else
+                float4 min = float4(nearIntersection, 1);
+                float4 max = float4(farIntersection, 1);
+#endif
+
                 for (int i = 0; i < MAX_VOLUME_STEPS; ++i)
                 {
                     if (i < segments)
@@ -187,19 +210,24 @@ Shader "Custom/Volumetric Effect/Volumetric Effect"
                         half density = getDensity(pos);
                         transmittance *= beersLaw(density);
                         light += transmittance * calculateLight(pos, density);
+
+#ifdef _SDF_SHAPE
+                        min = density > 0.01 ? lerp(float4(pos, 1), min, min.w) : min;
+                        max = density > 0.01 ? float4(pos, 1) : max;
+#endif
                     }
                 }
 
                 light += _AmbientScale.rgb;
                 
-                float2 min = mul(UNITY_MATRIX_VP, float4(nearIntersection, 1)).zw;
-                float2 max = mul(UNITY_MATRIX_VP, float4(farIntersection, 1)).zw;
+                min = mul(UNITY_MATRIX_VP, min);
+                max = mul(UNITY_MATRIX_VP, max);
 
                 float alpha = 1 - transmittance;
                 
                 FragmentOutput output;
                 output.color = half4(_Color.rgb * light * alpha, alpha);
-                output.depthMinMax = float2(min.x / min.y, 1 - max.x / max.y);
+                output.depthMinMax = float2(min.z / min.w, 1 - max.z / max.w);
                 return output;
             }
             ENDHLSL

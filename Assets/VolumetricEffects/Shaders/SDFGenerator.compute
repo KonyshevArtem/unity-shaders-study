@@ -1,0 +1,77 @@
+#pragma kernel GenerateSDF
+
+RWTexture3D<float4> _SDF;
+
+ByteAddressBuffer _Vertices;
+ByteAddressBuffer _Indices;
+
+uniform int _Stride;
+uniform int _PositionOffset;
+uniform int _NormalOffset;
+uniform int _VerticesCount;
+uniform int _TrianglesCount;
+uniform half3 _SDFResolution;
+uniform float3 _BoundsMin;
+uniform float3 _BoundsMax;
+
+float dot2(float3 v)
+{
+    return dot(v, v);
+}
+
+float udTriangle( float3 p, float3 a, float3 b, float3 c )
+{
+    //https://iquilezles.org/articles/distfunctions/
+    float3 ba = b - a; float3 pa = p - a;
+    float3 cb = c - b; float3 pb = p - b;
+    float3 ac = a - c; float3 pc = p - c;
+    float3 nor = cross( ba, ac );
+
+    return sqrt(
+      (sign(dot(cross(ba,nor),pa)) +
+       sign(dot(cross(cb,nor),pb)) +
+       sign(dot(cross(ac,nor),pc))<2.0)
+       ?
+       min( min(
+       dot2(ba*clamp(dot(ba,pa)/dot2(ba),0.0,1.0)-pa),
+       dot2(cb*clamp(dot(cb,pb)/dot2(cb),0.0,1.0)-pb) ),
+       dot2(ac*clamp(dot(ac,pc)/dot2(ac),0.0,1.0)-pc) )
+       :
+       dot(nor,pa)*dot(nor,pa)/dot2(nor) );
+}
+
+[numthreads(4,4,4)]
+void GenerateSDF(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _SDFResolution.x || id.y >= _SDFResolution.y || id.z >= _SDFResolution.z)
+    {
+        return;
+    }
+
+    float3 position = lerp(_BoundsMin, _BoundsMax, id / _SDFResolution);
+    float minDistance = -1;
+    bool isInside = false;
+    for (uint i = 0; i < _TrianglesCount; ++i)
+    {
+        int3 indices = asint(_Indices.Load3(i * 12));
+
+        float3 normal = 0;
+        float3 v1 = asfloat(_Vertices.Load3(indices.x * _Stride + _PositionOffset));
+        normal += asfloat(_Vertices.Load3(indices.x * _Stride + _NormalOffset));
+        float3 v2 = asfloat(_Vertices.Load3(indices.y * _Stride + _PositionOffset));
+        normal += asfloat(_Vertices.Load3(indices.y * _Stride + _NormalOffset));
+        float3 v3 = asfloat(_Vertices.Load3(indices.z * _Stride + _PositionOffset));
+        normal += asfloat(_Vertices.Load3(indices.z * _Stride + _NormalOffset));
+        normal *= 0.33;
+
+        float dist = udTriangle(position, v1, v2, v3);
+        if (minDistance < 0 || dist < minDistance)
+        {
+            minDistance = dist;
+            float3 dir = normalize((v1 + v2 + v3) * 0.33 - position);
+            isInside = dot(normal, dir) > 0.01;
+        }
+    }
+    
+    _SDF[id.xyz] = minDistance * (isInside ? -1 : 1);
+}

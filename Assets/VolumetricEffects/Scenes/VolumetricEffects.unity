@@ -562,6 +562,7 @@ GameObject:
   - component: {fileID: 229020129}
   - component: {fileID: 229020128}
   - component: {fileID: 229020127}
+  - component: {fileID: 229020131}
   m_Layer: 0
   m_Name: Volume
   m_TagString: Untagged
@@ -647,6 +648,21 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &229020131
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 229020126}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 35421b634f5c844e9a01cf7d55e92ced, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Mesh: {fileID: 10208, guid: 0000000000000000e000000000000000, type: 0}
+  m_Shader: {fileID: 7200000, guid: e4d6ddedd0e4942b989250cf04ded32c, type: 3}
+  m_SDFResolution: {x: 64, y: 64, z: 64}
 --- !u!1 &684106515
 GameObject:
   m_ObjectHideFlags: 0
